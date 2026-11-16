@@ -1,0 +1,2375 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Reinforced Concrete Studio — Calcul béton armé</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: #f1f5f9;
+      color: #0f172a;
+    }
+    .font-mono-tech {
+      font-family: 'JetBrains Mono', monospace;
+    }
+    @media print {
+      .no-print { display: none !important; }
+      .print-only { display: block !important; }
+      @page { size: A4 portrait; margin: 14mm 12mm; }
+      body {
+        background: white !important;
+        color: #0f172a !important;
+        font-size: 10.5pt !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+      }
+      main { display: block !important; padding: 0 !important; max-width: 100% !important; }
+      .print-full { width: 100% !important; max-width: 100% !important; box-shadow: none !important; border: none !important; margin: 0 auto !important; }
+      .print-break-avoid { break-inside: avoid; page-break-inside: avoid; }
+    }
+    .print-only { display: none; }
+    /* Mise en page dédiée export PDF centré A4 */
+    .pdf-export-mode {
+      width: 100% !important;
+      max-width: 700px !important;
+      margin: 0 auto !important;
+      padding: 12px 16px !important;
+      background: #ffffff !important;
+      box-sizing: border-box !important;
+    }
+    .pdf-export-mode .pdf-center-header {
+      text-align: center !important;
+    }
+    .pdf-export-mode .pdf-svg-box {
+      height: 220px !important;
+      min-height: 220px !important;
+      display: flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      margin: 0 auto !important;
+    }
+    .pdf-export-mode .pdf-svg-box svg {
+      width: 280px !important;
+      height: 200px !important;
+      display: block !important;
+      margin: 0 auto !important;
+    }
+    .pdf-export-mode .print-break-avoid {
+      break-inside: avoid !important;
+      page-break-inside: avoid !important;
+    }
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #e2e8f0; }
+    ::-webkit-scrollbar-thumb { background: #94a3b8; border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: #64748b; }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+  <!-- TOP HEADER -->
+  <header class="bg-slate-900 text-white shadow-lg border-b border-slate-800 no-print">
+    <div class="max-w-[1600px] mx-auto px-4 py-3 flex flex-wrap items-center justify-between gap-4">
+      <div class="flex items-center gap-3">
+        <img src="/favicon.svg" class="h-10 w-10 drop-shadow" alt="" aria-hidden="true" />
+        <div>
+          <div class="flex items-center gap-2">
+            <h1 class="text-lg font-bold tracking-tight">Reinforced Concrete <span class="text-amber-400">Studio</span></h1>
+            <span class="text-[11px] font-mono-tech bg-slate-800 text-amber-300 px-2 py-0.5 rounded border border-slate-700">BAEL 91 rév.99 • DTU 13.12 • Fasc. 62-V</span>
+          </div>
+          <p class="text-xs text-slate-400">Pré-dimensionnement et notes de calcul indicatives</p>
+        </div>
+      </div>
+
+      <!-- GLOBAL MATERIALS BAR -->
+      <div class="flex flex-wrap items-center gap-3 bg-slate-800/80 px-3 py-2 rounded-lg border border-slate-700 text-xs">
+        <div class="flex items-center gap-1.5">
+          <label class="text-slate-400 font-medium">Béton <span class="font-serif italic text-slate-200">f<sub>c28</sub></span> :</label>
+          <select id="global-fc28" class="bg-slate-900 text-white border border-slate-600 rounded px-2 py-1 font-mono-tech focus:outline-none focus:border-amber-400">
+            <option value="20">20 MPa (C20/25)</option>
+            <option value="25" selected>25 MPa (C25/30)</option>
+            <option value="30">30 MPa (C30/37)</option>
+            <option value="35">35 MPa (C35/45)</option>
+            <option value="40">40 MPa (C40/50)</option>
+          </select>
+        </div>
+        <div class="flex items-center gap-1.5">
+          <label class="text-slate-400 font-medium">Acier <span class="font-serif italic text-slate-200">f<sub>e</sub></span> :</label>
+          <select id="global-fe" class="bg-slate-900 text-white border border-slate-600 rounded px-2 py-1 font-mono-tech focus:outline-none focus:border-amber-400">
+            <option value="400">FeE400 (400 MPa)</option>
+            <option value="500" selected>FeE500 (500 MPa)</option>
+          </select>
+        </div>
+        <div class="flex items-center gap-1.5">
+          <label class="text-slate-400 font-medium">Fissuration :</label>
+          <select id="global-fiss" class="bg-slate-900 text-white border border-slate-600 rounded px-2 py-1 focus:outline-none focus:border-amber-400">
+            <option value="FPP" selected>Peu Préjudiciable (FPP)</option>
+            <option value="FP">Préjudiciable (FP)</option>
+            <option value="FTP">Très Préjudiciable (FTP)</option>
+          </select>
+        </div>
+        <div class="flex items-center gap-1.5">
+          <label class="text-slate-400 font-medium">Situation :</label>
+          <select id="global-sit" class="bg-slate-900 text-white border border-slate-600 rounded px-2 py-1 focus:outline-none focus:border-amber-400">
+            <option value="durable" selected>Durable (γb = 1,50 ; γs = 1,15)</option>
+            <option value="accidentelle">Accidentelle (γb = 1,15 ; γs = 1,00)</option>
+          </select>
+        </div>
+        <button id="btn-print" type="button" class="ml-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-semibold px-3 py-1.5 rounded transition flex items-center gap-1.5 cursor-pointer shadow">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+          Télécharger Note PDF
+        </button>
+      </div>
+    </div>
+
+    <!-- NAVIGATION TABS -->
+    <nav class="bg-slate-800 border-t border-slate-700 overflow-x-auto">
+      <div class="max-w-[1600px] mx-auto px-4 flex space-x-1" id="nav-tabs">
+        <!-- Populated by JS -->
+      </div>
+    </nav>
+  </header>
+
+  <!-- DERIVED MATERIAL PROPERTIES BANNER -->
+  <div class="bg-white border-b border-slate-200 px-4 py-2 text-xs text-slate-600 no-print">
+    <div class="max-w-[1600px] mx-auto flex flex-wrap items-center justify-between gap-2" id="mat-summary-bar">
+      <!-- Populated by JS -->
+    </div>
+  </div>
+  <div class="bg-amber-50 border-b border-amber-200 px-4 py-2 text-xs leading-relaxed text-amber-950 no-print">
+    <p class="max-w-[1600px] mx-auto">
+      Outil indicatif non certifié : les résultats ne constituent pas une attestation de conformité BAEL/DTU. Vérifiez les textes applicables, les hypothèses géotechniques et tous les états limites avec un ingénieur structure qualifié avant toute utilisation pour un ouvrage.
+    </p>
+  </div>
+
+  <!-- MAIN WORKSPACE -->
+  <main class="flex-1 max-w-[1600px] w-full mx-auto p-4 grid grid-cols-1 lg:grid-cols-12 gap-5">
+    
+    <!-- LEFT COLUMN: INPUT PARAMETERS (4 cols) -->
+    <section class="lg:col-span-4 bg-white rounded-xl shadow-sm border border-slate-200 p-5 h-fit no-print">
+      <div class="flex items-center justify-between border-b border-slate-100 pb-3 mb-4">
+        <div>
+          <span class="text-[11px] font-bold uppercase tracking-wider text-amber-600" id="module-norm-badge">BAEL 91 / DTU 13.12</span>
+          <h2 class="text-base font-bold text-slate-800" id="module-title">Paramètres de l'élément</h2>
+        </div>
+        <button id="btn-reset" type="button" class="text-xs text-slate-500 hover:text-slate-800 underline">Valeurs types</button>
+      </div>
+
+      <form id="module-inputs" class="space-y-4">
+        <!-- Dynamic form fields -->
+      </form>
+
+      <div class="mt-5 pt-4 border-t border-slate-100 flex flex-col gap-2">
+        <button id="btn-compute" type="button" class="w-full bg-slate-900 hover:bg-slate-800 active:scale-[0.99] text-white font-semibold py-2.5 px-4 rounded-lg shadow transition text-sm flex items-center justify-center gap-2 cursor-pointer">
+          <svg class="w-4 h-4 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
+          <span>Calculer & Vérifier</span>
+        </button>
+        <div id="compute-feedback" class="text-center text-[11px] font-mono-tech text-emerald-700 hidden" role="status" aria-live="polite"></div>
+      </div>
+
+      <!-- COMPARATIVE PEDAGOGICAL NOTE -->
+      <div class="mt-5 bg-slate-50 rounded-lg p-3.5 border border-slate-200 text-xs text-slate-600 leading-relaxed" id="paille-note-box">
+        <!-- Populated by JS -->
+      </div>
+    </section>
+
+    <!-- RIGHT COLUMN: RESULTS, SVG DIAGRAM & CALCULATION NOTE (8 cols) -->
+    <section class="lg:col-span-8 space-y-5 print-full" id="results-section">
+
+      <!-- PRINT-ONLY FORMAL ENGINEERING HEADER (CARTOUCHE NOTE DE CALCUL PDF) -->
+      <div class="print-only border-2 border-slate-900 rounded-lg p-4 mb-4 bg-white">
+        <div class="text-center border-b border-slate-300 pb-3 mb-3 pdf-center-header">
+          <div class="text-[11px] font-bold uppercase tracking-widest text-amber-700">Note de calcul indicative — Béton Armé & Fondations</div>
+          <h1 class="text-xl font-bold text-slate-950 mt-1" id="print-doc-title">Dimensionnement d'ouvrage</h1>
+          <p class="text-xs text-slate-600 mt-0.5" id="print-doc-norm">Référentiels : BAEL 91 rév. 99 • DTU 13.12 • Fascicule 62 Titre V</p>
+          <div class="mt-1.5 inline-flex items-center justify-center gap-4 text-[11px] font-mono-tech text-slate-700 bg-slate-100 px-3 py-1 rounded">
+            <span class="font-bold text-slate-950">Reinforced Concrete Studio</span>
+            <span>•</span>
+            <span id="print-doc-date">Date : --/--/----</span>
+            <span>•</span>
+            <span>Indice : A (Exécution)</span>
+          </div>
+        </div>
+        <div class="grid grid-cols-2 gap-4 text-xs" id="print-doc-hypotheses">
+          <!-- Populated dynamically before printing -->
+        </div>
+      </div>
+      
+      <!-- TOP ROW: STATUS CARDS + SVG VISUALIZER -->
+      <div class="grid grid-cols-1 md:grid-cols-12 gap-5 print-break-avoid">
+        <!-- SUMMARY KPIs -->
+        <div class="md:col-span-7 bg-white rounded-xl shadow-sm border border-slate-200 p-5 flex flex-col justify-between" id="kpi-panel">
+          <!-- Populated by JS -->
+        </div>
+
+        <!-- DYNAMIC SVG SECTION / PLAN DRAWING -->
+        <div class="md:col-span-5 bg-white rounded-xl shadow-sm border border-slate-200 p-4 flex flex-col items-center justify-center">
+          <div class="w-full flex items-center justify-between mb-2">
+            <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Schéma de principe & Ferraillage</span>
+            <span class="text-[11px] font-mono-tech text-slate-400" id="svg-scale-label">Cotes en cm</span>
+          </div>
+          <div id="svg-container" class="w-full h-56 flex items-center justify-center bg-slate-50 rounded-lg border border-slate-100 overflow-hidden pdf-svg-box">
+            <!-- SVG rendered here -->
+          </div>
+        </div>
+      </div>
+
+      <!-- DETAILED CALCULATION REPORT -->
+      <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+        <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 pb-3 mb-4 pdf-center-header">
+          <div class="w-full sm:w-auto">
+            <h3 class="text-base font-bold text-slate-900">Note de Calcul Détaillée</h3>
+            <p class="text-xs text-slate-500" id="report-subtitle">Hypothèses, sollicitations, sections d'acier et vérifications calculées pas à pas</p>
+          </div>
+          <div class="flex items-center justify-center gap-2 mx-auto sm:mx-0">
+            <button type="button" id="btn-export-pdf-2" class="no-print text-xs font-semibold bg-amber-500 hover:bg-amber-400 text-slate-950 px-3 py-1.5 rounded-lg transition flex items-center gap-1.5 cursor-pointer shadow-sm">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+              Télécharger PDF
+            </button>
+            <button type="button" id="btn-native-print" class="no-print text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-300 px-2.5 py-1.5 rounded-lg transition flex items-center gap-1.5 cursor-pointer">
+              <svg class="w-3.5 h-3.5 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
+              Imprimer
+            </button>
+            <div id="global-verdict-badge"></div>
+          </div>
+        </div>
+
+        <div id="calculation-steps" class="space-y-4 text-sm">
+          <!-- Step-by-step calculation blocks -->
+        </div>
+        <p id="pdf-export-feedback" class="no-print hidden mt-3 text-xs" role="status" aria-live="polite"></p>
+        <p class="mt-4 rounded-lg border border-amber-300 bg-amber-50 p-3 text-xs leading-relaxed text-amber-950">
+          Résultats indicatifs : les formules et références normatives doivent être vérifiées au regard des textes applicables, des données géotechniques et du projet. Ce logiciel n'est ni certifié ni une validation réglementaire ; faites valider toute conception par un ingénieur structure qualifié.
+        </p>
+      </div>
+
+    </section>
+  </main>
+
+  <script>
+    // =========================================================================
+    // 1. CATALOGUE DES ACIERS HA (Sections en cm² pour n barres)
+    // =========================================================================
+    function rebarAreaCm2(phiMm, count = 1) {
+      return count * Math.PI * Math.pow(phiMm / 10, 2) / 4;
+    }
+
+    function proposeRebarChoice(requiredCm2, minCount = 2, maxWidthCm = 100, preferredPhis = [10, 12, 14, 16, 20, 25]) {
+      if (requiredCm2 <= 0) return { text: "Aucune armature requise", area: 0, phi: 0, n: 0 };
+      let best = null;
+      for (const phi of preferredPhis) {
+        const unit = rebarAreaCm2(phi, 1);
+        let n = Math.max(minCount, Math.ceil(requiredCm2 / unit));
+        const area = n * unit;
+        const layers = Math.ceil((n * (phi / 10 + 2.5)) / Math.max(15, maxWidthCm - 6));
+        if (layers <= 3) {
+          if (!best || area < best.area * 1.08) {
+            best = { n, phi, area, layers, text: `${n} HA ${phi} (${area.toFixed(2)} cm²${layers > 1 ? `, ${layers} lits` : ''})` };
+            if (area >= requiredCm2 && area <= requiredCm2 * 1.18) break;
+          }
+        }
+      }
+      if (!best) {
+        const phi = 25;
+        const n = Math.max(minCount, Math.ceil(requiredCm2 / rebarAreaCm2(phi, 1)));
+        const area = rebarAreaCm2(phi, n);
+        best = { n, phi, area, layers: 2, text: `${n} HA ${phi} (${area.toFixed(2)} cm²)` };
+      }
+      return best;
+    }
+
+    function proposeMeshSpacing(requiredCm2PerM, preferredPhis = [8, 10, 12, 14, 16]) {
+      if (requiredCm2PerM <= 0) return { text: "Forfaitaire min.", area: 0 };
+      for (const phi of preferredPhis) {
+        const unit = rebarAreaCm2(phi, 1);
+        let s = Math.floor((unit * 100) / requiredCm2PerM);
+        if (s >= 10 && s <= 25) {
+          const std = [25, 20, 15, 12.5, 10].find(v => v <= s) || 10;
+          const area = unit * (100 / std);
+          return { phi, s: std, area, text: `HA ${phi} esp. ${std} cm (${area.toFixed(2)} cm²/ml)` };
+        }
+      }
+      const phi = 16;
+      const unit = rebarAreaCm2(phi, 1);
+      const s = Math.max(7.5, Math.floor((unit * 100) / requiredCm2PerM));
+      const area = unit * (100 / s);
+      return { phi, s, area, text: `HA ${phi} esp. ${s} cm (${area.toFixed(2)} cm²/ml)` };
+    }
+
+    // =========================================================================
+    // 2. CONFIGURATION DES 8 MODULES D'ÉLÉMENTS EN BÉTON ARMÉ
+    // =========================================================================
+    // Fonction utilitaire Fascicule 62 Titre V : Calcul de la contrainte de rupture qu (MPa)
+    // à partir de l'essai pressiométrique Ménard (Annexe E.1) ou pénétrométrique statique CPT (Annexe E.2)
+    function computeFasc62Bearing(s, A_m, B_m, sit) {
+      const methode = s.fasc62_essai || 'pressiometre';
+      const D_m = Math.max(0.2, s.D_ancrage || 1.0);
+      const gamma_terre = (s.gamma_sol || 19) / 1000; // MN/m3
+      const q0_MPa = gamma_terre * D_m; // Contrainte verticale totale initiale au niveau de la base
+      const solType = s.sol_cat || 'argile_B';
+      const gamma_q = sit === 'accidentelle' ? 1.5 : 2.0; // Fascicule 62-V Art. B.3,1 (2.0 fondamental, 1.5 accidentel)
+
+      // Hauteur d'encastrement équivalente De (approchée par D si terrain homogène)
+      const De_m = D_m;
+      const B_ref = Math.max(0.2, Math.min(A_m, B_m));
+      const De_sur_B = Math.min(3.0, De_m / B_ref);
+      const B_sur_L = B_m > 0 ? Math.min(1.0, A_m / B_m) : 0; // 0 pour semelle filante
+
+      if (methode === 'pressiometre') {
+        // Annexe E.1 Fascicule 62-V : qu = q0 + kp * ple* * i_delta * i_beta
+        const ple = Math.max(0.05, s.ple_star || 1.2); // MPa
+        let kp0 = 0.8, a_kp = 0.25;
+        if (solType === 'argile_A') { kp0 = 0.8; a_kp = 0.25; }
+        else if (solType === 'argile_B') { kp0 = 0.8; a_kp = 0.35; }
+        else if (solType === 'sable_A') { kp0 = 1.0; a_kp = 0.35; }
+        else if (solType === 'sable_B') { kp0 = 1.0; a_kp = 0.50; }
+        else if (solType === 'craie_roche') { kp0 = 1.3; a_kp = 0.50; }
+
+        // Facteur de portance pressiométrique kp selon De/B et B/L (Fascicule 62-V Annexe E.1)
+        const kp = kp0 * (1 + 0.2 * B_sur_L) + a_kp * (1 - 0.2 * B_sur_L) * De_sur_B;
+        const qu_MPa = q0_MPa + kp * ple;
+        const q_adm_ELU = q0_MPa + (qu_MPa - q0_MPa) / gamma_q;
+        const q_adm_ELS = q0_MPa + (qu_MPa - q0_MPa) / 3.0; // Vérification ELS rare Fasc. 62-V (gamma_q = 3.0)
+
+        return {
+          methode: 'pressiometre',
+          label: 'Pressiomètre Ménard (Annexe E.1)',
+          q0_MPa,
+          k_fact: kp,
+          k_symbol: 'k_p',
+          param_val: ple,
+          param_symbol: 'p_{le}^*',
+          qu_MPa,
+          gamma_q,
+          q_adm_ELU,
+          q_adm_ELS,
+          formulaHtml: `
+            <p>• <strong>Essai Pressiométrique Ménard (Fascicule 62-V, Annexe E.1) :</strong> $p_{le}^* = \\mathbf{${ple.toFixed(2)}\\text{ MPa}}$, encastrement $D = ${D_m.toFixed(2)}\\text{ m}$ ($q_0 = ${q0_MPa.toFixed(3)}\\text{ MPa}$).</p>
+            <p>• Facteur de portance pressiométrique ($D_e/B = ${De_sur_B.toFixed(2)}$, $B/L = ${B_sur_L.toFixed(2)}$) : $k_p = \\mathbf{${kp.toFixed(3)}}$.</p>
+            <p>• Contrainte ultime de rupture : $q_u = q_0 + k_p \\cdot p_{le}^* = ${q0_MPa.toFixed(3)} + ${kp.toFixed(3)} \\times ${ple.toFixed(2)} = \\mathbf{${qu_MPa.toFixed(3)}\\text{ MPa}}$.</p>
+            <p>• Contrainte admissible de calcul ($\\gamma_q = ${gamma_q.toFixed(1)}$ à l'ELU, $3,0$ à l'ELS) : $q_{adm,ELU} = q_0 + \\frac{q_u - q_0}{\\gamma_q} = \\mathbf{${q_adm_ELU.toFixed(3)}\\text{ MPa}}$ ($q_{adm,ELS} = ${q_adm_ELS.toFixed(3)}\\text{ MPa}$).</p>
+          `
+        };
+      } else if (methode === 'penetrometre') {
+        // Annexe E.2 Fascicule 62-V : qu = q0 + kc * qce
+        const qce = Math.max(0.2, s.qce_cpt || 6.0); // MPa
+        let kc0 = 0.32, b_kc = 0.08;
+        if (solType === 'argile_A') { kc0 = 0.32; b_kc = 0.08; }
+        else if (solType === 'argile_B') { kc0 = 0.35; b_kc = 0.10; }
+        else if (solType === 'sable_A') { kc0 = 0.14; b_kc = 0.07; }
+        else if (solType === 'sable_B') { kc0 = 0.15; b_kc = 0.10; }
+        else if (solType === 'craie_roche') { kc0 = 0.25; b_kc = 0.12; }
+
+        const kc = kc0 * (1 + 0.2 * B_sur_L) + b_kc * De_sur_B;
+        const qu_MPa = q0_MPa + kc * qce;
+        const q_adm_ELU = q0_MPa + (qu_MPa - q0_MPa) / gamma_q;
+        const q_adm_ELS = q0_MPa + (qu_MPa - q0_MPa) / 3.0;
+
+        return {
+          methode: 'penetrometre',
+          label: 'Pénétromètre Statique CPT (Annexe E.2)',
+          q0_MPa,
+          k_fact: kc,
+          k_symbol: 'k_c',
+          param_val: qce,
+          param_symbol: 'q_{ce}',
+          qu_MPa,
+          gamma_q,
+          q_adm_ELU,
+          q_adm_ELS,
+          formulaHtml: `
+            <p>• <strong>Essai Pénétrométrique Statique CPT (Fascicule 62-V, Annexe E.2) :</strong> résistance de pointe équivalente $q_{ce} = \\mathbf{${qce.toFixed(2)}\\text{ MPa}}$, encastrement $D = ${D_m.toFixed(2)}\\text{ m}$ ($q_0 = ${q0_MPa.toFixed(3)}\\text{ MPa}$).</p>
+            <p>• Facteur de portance pénétrométrique ($D_e/B = ${De_sur_B.toFixed(2)}$, $B/L = ${B_sur_L.toFixed(2)}$) : $k_c = \\mathbf{${kc.toFixed(3)}}$.</p>
+            <p>• Contrainte ultime de rupture : $q_u = q_0 + k_c \\cdot q_{ce} = ${q0_MPa.toFixed(3)} + ${kc.toFixed(3)} \\times ${qce.toFixed(2)} = \\mathbf{${qu_MPa.toFixed(3)}\\text{ MPa}}$.</p>
+            <p>• Contrainte admissible de calcul ($\\gamma_q = ${gamma_q.toFixed(1)}$ à l'ELU, $3,0$ à l'ELS) : $q_{adm,ELU} = q_0 + \\frac{q_u - q_0}{\\gamma_q} = \\mathbf{${q_adm_ELU.toFixed(3)}\\text{ MPa}}$ ($q_{adm,ELS} = ${q_adm_ELS.toFixed(3)}\\text{ MPa}$).</p>
+          `
+        };
+      } else {
+        // Saisie directe de q_adm_ELU
+        const q_adm_ELU = Math.max(0.02, s.sigma_sol || 0.30);
+        const qu_MPa = q0_MPa + (q_adm_ELU - q0_MPa) * gamma_q;
+        const q_adm_ELS = q0_MPa + (qu_MPa - q0_MPa) / 3.0;
+        return {
+          methode: 'direct',
+          label: 'Contrainte limite directe $q_{adm,ELU}$',
+          q0_MPa,
+          k_fact: 1,
+          k_symbol: '',
+          param_val: q_adm_ELU,
+          param_symbol: 'q_{adm,ELU}',
+          qu_MPa,
+          gamma_q,
+          q_adm_ELU,
+          q_adm_ELS,
+          formulaHtml: `<p>• Contrainte admissible ELU imposée directement : $q_{adm,ELU} = \\mathbf{${q_adm_ELU.toFixed(3)}\\text{ MPa}}$ (soit $q_{adm,ELS} \\approx ${q_adm_ELS.toFixed(3)}\\text{ MPa}$).</p>`
+        };
+      }
+    }
+
+    const MODULES = [
+      {
+        id: 'semelle_isolee',
+        name: 'Semelle Isolée',
+        norm: 'BAEL 91 / DTU 13.12 ou Fascicule 62-V',
+        desc: 'Fondation superficielle sous poteau rectangulaire — DTU 13.12 ou Fascicule 62 Titre V (Pressiomètre Ménard / Pénétromètre statique CPT).',
+        pailleNote: `<strong>Méthodes géotechniques du Fascicule 62 Titre V :</strong><br/>
+        • <strong>Pressiomètre Ménard (Annexe E.1) :</strong> $q_u = q_0 + k_p \\cdot p_{le}^*$, avec $\\gamma_q = 2,0$ à l'ELU fondamental ($1,5$ en accidentel) et $\\gamma_q = 3,0$ à l'ELS rare.<br/>
+        • <strong>Pénétromètre Statique CPT (Annexe E.2) :</strong> $q_u = q_0 + k_c \\cdot q_{ce}$, avec réduction de largeur de Meyerhof $B' = B - 2e_u$ sous moment fléchissant.`,
+        fields: [
+          { id: 'reglement_fond', label: 'Règlement de calcul des fondations', type: 'select', options: [
+            { value: 'DTU1312', label: 'DTU 13.12 — Bâtiment (Vérification ELS σ̄sol)' },
+            { value: 'FASC62', label: 'Fascicule 62 Titre V — Génie Civil (ELU & ELS)' }
+          ], val: 'FASC62' },
+          { id: 'fasc62_essai', label: 'Méthode d\'essai géotechnique (Fascicule 62-V)', type: 'select', showIf: (s) => s.reglement_fond === 'FASC62', options: [
+            { value: 'pressiometre', label: 'Essai Pressiométrique Ménard (ple*, kp — Annexe E.1)' },
+            { value: 'penetrometre', label: 'Essai Pénétrométrique Statique CPT (qce, kc — Annexe E.2)' },
+            { value: 'direct', label: 'Contrainte limite directe imposée (qadm,ELU)' }
+          ], val: 'pressiometre' },
+          { id: 'sol_cat', label: 'Catégorie conventionnelle du sol (Fasc. 62-V)', type: 'select', showIf: (s) => s.reglement_fond === 'FASC62' && s.fasc62_essai !== 'direct', options: [
+            { value: 'argile_A', label: 'Argiles et limons mous (Classe A)' },
+            { value: 'argile_B', label: 'Argiles et limons fermes à raides (Classe B)' },
+            { value: 'sable_A', label: 'Sables et graves lâches (Classe A)' },
+            { value: 'sable_B', label: 'Sables et graves moyennement compacts à compacts (Classe B)' },
+            { value: 'craie_roche', label: 'Craies / Marnes / Rochers altérés' }
+          ], val: 'argile_B' },
+          { id: 'ple_star', label: 'Pression limite nette équivalente $p_{le}^*$', unit: 'MPa', showIf: (s) => s.reglement_fond === 'FASC62' && s.fasc62_essai === 'pressiometre', val: 1.15, step: 0.05 },
+          { id: 'qce_cpt', label: 'Résistance de pointe équivalente CPT $q_{ce}$', unit: 'MPa', showIf: (s) => s.reglement_fond === 'FASC62' && s.fasc62_essai === 'penetrometre', val: 5.50, step: 0.25 },
+          { id: 'D_ancrage', label: 'Profondeur d\'encastrement de la semelle $D$', unit: 'm', showIf: (s) => s.reglement_fond === 'FASC62', val: 1.20, step: 0.1 },
+          { id: 'gamma_sol', label: 'Poids volumique des terres $\\gamma_{sol}$', unit: 'kN/m³', showIf: (s) => s.reglement_fond === 'FASC62', val: 19, step: 0.5 },
+          { id: 'sigma_sol', label: 'Contrainte admissible sol $\\overline{\\sigma}_{sol}$ / $q_{adm,ELU}$', unit: 'MPa', showIf: (s) => s.reglement_fond === 'DTU1312' || s.fasc62_essai === 'direct', val: 0.22, step: 0.02 },
+          { id: 'N_G', label: 'Charge permanente poteau $G$', unit: 'kN', val: 450, step: 10 },
+          { id: 'N_Q', label: 'Charge d\'exploitation poteau $Q$', unit: 'kN', val: 200, step: 10 },
+          { id: 'M_ser', label: 'Moment fléchissant en pied $M_{ser}$ (ELS)', unit: 'kN.m', val: 25, step: 5 },
+          { id: 'M_u_imp', label: 'Moment fléchissant ultime $M_u$ (ELU)', unit: 'kN.m', val: 35, step: 5 },
+          { id: 'a', label: 'Largeur poteau $a$', unit: 'cm', val: 30, step: 5 },
+          { id: 'b', label: 'Longueur poteau $b$', unit: 'cm', val: 40, step: 5 },
+          { id: 'c_enrob', label: 'Enrobage inférieur $c$ (sur béton propreté)', unit: 'cm', val: 4, step: 0.5 },
+          { id: 'homothetie', label: 'Géométrie de la semelle', type: 'select', options: [
+            { value: 'auto', label: 'Dimensionnement automatique homothétique (A/a = B/b)' },
+            { value: 'manual', label: 'Dimensions imposées (A et B)' }
+          ], val: 'auto' },
+          { id: 'A_imp', label: 'Largeur semelle $A$ (si imposée)', unit: 'cm', showIf: (s) => s.homothetie === 'manual', val: 170, step: 5 },
+          { id: 'B_imp', label: 'Longueur semelle $B$ (si imposée)', unit: 'cm', showIf: (s) => s.homothetie === 'manual', val: 220, step: 5 },
+          { id: 'h_imp', label: 'Hauteur totale $h$ (0 = auto)', unit: 'cm', val: 0, step: 5 }
+        ]
+      },
+      {
+        id: 'semelle_filante',
+        name: 'Semelle Filante',
+        norm: 'BAEL 91 / DTU 13.12 ou Fascicule 62-V',
+        desc: 'Fondation continue sous mur ou voile porteur (calcul par mètre linéaire) — DTU 13.12 ou Fascicule 62 Titre V (Pressiomètre / CPT).',
+        pailleNote: `<strong>Semelle filante sous Fascicule 62 Titre V ($B/L \\to 0$) :</strong> Le facteur de portance pressiométrique $k_p$ ou pénétrométrique $k_c$ est évalué pour une fondation filante ($B/L = 0$) en fonction de l'encastrement relatif $D_e/B$. La vérification est menée à l'ELU ($\\gamma_q = 2,0$) et à l'ELS rare ($\\gamma_q = 3,0$).`,
+        fields: [
+          { id: 'reglement_fond', label: 'Règlement de calcul des fondations', type: 'select', options: [
+            { value: 'DTU1312', label: 'DTU 13.12 — Bâtiment (Vérification ELS σ̄sol)' },
+            { value: 'FASC62', label: 'Fascicule 62 Titre V — Génie Civil (ELU & ELS)' }
+          ], val: 'FASC62' },
+          { id: 'fasc62_essai', label: 'Méthode d\'essai géotechnique (Fascicule 62-V)', type: 'select', showIf: (s) => s.reglement_fond === 'FASC62', options: [
+            { value: 'pressiometre', label: 'Essai Pressiométrique Ménard (ple*, kp — Annexe E.1)' },
+            { value: 'penetrometre', label: 'Essai Pénétrométrique Statique CPT (qce, kc — Annexe E.2)' },
+            { value: 'direct', label: 'Contrainte limite directe imposée (qadm,ELU)' }
+          ], val: 'pressiometre' },
+          { id: 'sol_cat', label: 'Catégorie conventionnelle du sol (Fasc. 62-V)', type: 'select', showIf: (s) => s.reglement_fond === 'FASC62' && s.fasc62_essai !== 'direct', options: [
+            { value: 'argile_A', label: 'Argiles et limons mous (Classe A)' },
+            { value: 'argile_B', label: 'Argiles et limons fermes à raides (Classe B)' },
+            { value: 'sable_A', label: 'Sables et graves lâches (Classe A)' },
+            { value: 'sable_B', label: 'Sables et graves moyennement compacts à compacts (Classe B)' },
+            { value: 'craie_roche', label: 'Craies / Marnes / Rochers altérés' }
+          ], val: 'sable_B' },
+          { id: 'ple_star', label: 'Pression limite nette équivalente $p_{le}^*$', unit: 'MPa', showIf: (s) => s.reglement_fond === 'FASC62' && s.fasc62_essai === 'pressiometre', val: 1.05, step: 0.05 },
+          { id: 'qce_cpt', label: 'Résistance de pointe équivalente CPT $q_{ce}$', unit: 'MPa', showIf: (s) => s.reglement_fond === 'FASC62' && s.fasc62_essai === 'penetrometre', val: 6.00, step: 0.25 },
+          { id: 'D_ancrage', label: 'Profondeur d\'encastrement de la semelle $D$', unit: 'm', showIf: (s) => s.reglement_fond === 'FASC62', val: 1.00, step: 0.1 },
+          { id: 'gamma_sol', label: 'Poids volumique des terres $\\gamma_{sol}$', unit: 'kN/m³', showIf: (s) => s.reglement_fond === 'FASC62', val: 19, step: 0.5 },
+          { id: 'sigma_sol', label: 'Contrainte admissible sol $\\overline{\\sigma}_{sol}$ / $q_{adm,ELU}$', unit: 'MPa', showIf: (s) => s.reglement_fond === 'DTU1312' || s.fasc62_essai === 'direct', val: 0.18, step: 0.02 },
+          { id: 'G_ml', label: 'Charge permanente par ml $G$', unit: 'kN/ml', val: 180, step: 5 },
+          { id: 'Q_ml', label: 'Charge d\'exploitation par ml $Q$', unit: 'kN/ml', val: 75, step: 5 },
+          { id: 'b0', label: 'Épaisseur du mur / voile $b_0$', unit: 'cm', val: 20, step: 5 },
+          { id: 'B_imp', label: 'Largeur semelle $B$ (0 = auto)', unit: 'cm', val: 0, step: 5 },
+          { id: 'h_imp', label: 'Hauteur totale $h$ (0 = auto)', unit: 'cm', val: 0, step: 5 },
+          { id: 'c_enrob', label: 'Enrobage inférieur $c$', unit: 'cm', val: 4, step: 0.5 }
+        ]
+      },
+      {
+        id: 'poutre_redressement',
+        name: 'Poutre de Redressement',
+        norm: 'BAEL 91 / DTU 13.12 ou Fascicule 62-V',
+        desc: 'Longrine de redressement reliant un poteau de rive (semelle excentrée) à un poteau intérieur — Vérification géotechnique sous S1.',
+        pailleNote: `<strong>Poutre de redressement & Justification du sol sous $S_1$ :</strong> La réaction sous la semelle excentrée $S_1$ vaut $R_1 = N_1 \\frac{L}{L - e}$. Sous <strong>Fascicule 62-V</strong>, la portance sous $S_1$ peut être calculée directement à partir des résultats d'essais pressiométriques ($p_{le}^*$) ou pénétrométriques statiques ($q_{ce}$).`,
+        fields: [
+          { id: 'reglement_fond', label: 'Règlement de calcul des fondations', type: 'select', options: [
+            { value: 'DTU1312', label: 'DTU 13.12 — Bâtiment (Vérification ELS sous S1)' },
+            { value: 'FASC62', label: 'Fascicule 62 Titre V — Génie Civil (ELU & ELS sous S1)' }
+          ], val: 'FASC62' },
+          { id: 'fasc62_essai', label: 'Méthode d\'essai géotechnique (Fascicule 62-V)', type: 'select', showIf: (s) => s.reglement_fond === 'FASC62', options: [
+            { value: 'pressiometre', label: 'Essai Pressiométrique Ménard (ple*, kp — Annexe E.1)' },
+            { value: 'penetrometre', label: 'Essai Pénétrométrique Statique CPT (qce, kc — Annexe E.2)' },
+            { value: 'direct', label: 'Contrainte limite directe imposée (qadm,ELU)' }
+          ], val: 'pressiometre' },
+          { id: 'sol_cat', label: 'Catégorie conventionnelle du sol (Fasc. 62-V)', type: 'select', showIf: (s) => s.reglement_fond === 'FASC62' && s.fasc62_essai !== 'direct', options: [
+            { value: 'argile_A', label: 'Argiles et limons mous (Classe A)' },
+            { value: 'argile_B', label: 'Argiles et limons fermes à raides (Classe B)' },
+            { value: 'sable_A', label: 'Sables et graves lâches (Classe A)' },
+            { value: 'sable_B', label: 'Sables et graves moyennement compacts à compacts (Classe B)' },
+            { value: 'craie_roche', label: 'Craies / Marnes / Rochers altérés' }
+          ], val: 'argile_B' },
+          { id: 'ple_star', label: 'Pression limite nette équivalente $p_{le}^*$', unit: 'MPa', showIf: (s) => s.reglement_fond === 'FASC62' && s.fasc62_essai === 'pressiometre', val: 1.25, step: 0.05 },
+          { id: 'qce_cpt', label: 'Résistance de pointe équivalente CPT $q_{ce}$', unit: 'MPa', showIf: (s) => s.reglement_fond === 'FASC62' && s.fasc62_essai === 'penetrometre', val: 6.50, step: 0.25 },
+          { id: 'D_ancrage', label: 'Profondeur d\'encastrement de la semelle $D$', unit: 'm', showIf: (s) => s.reglement_fond === 'FASC62', val: 1.20, step: 0.1 },
+          { id: 'gamma_sol', label: 'Poids volumique des terres $\\gamma_{sol}$', unit: 'kN/m³', showIf: (s) => s.reglement_fond === 'FASC62', val: 19, step: 0.5 },
+          { id: 'sigma_sol', label: 'Contrainte sol admissible $\\overline{\\sigma}_{sol}$ / $q_{adm,ELU}$', unit: 'MPa', showIf: (s) => s.reglement_fond === 'DTU1312' || s.fasc62_essai === 'direct', val: 0.22, step: 0.02 },
+          { id: 'N1_G', label: 'Charge permanente poteau rive $G_1$', unit: 'kN', val: 320, step: 10 },
+          { id: 'N1_Q', label: 'Charge exploitation poteau rive $Q_1$', unit: 'kN', val: 130, step: 10 },
+          { id: 'N2_G', label: 'Charge permanente poteau int. $G_2$', unit: 'kN', val: 500, step: 10 },
+          { id: 'N2_Q', label: 'Charge exploitation poteau int. $Q_2$', unit: 'kN', val: 200, step: 10 },
+          { id: 'L_entraxe', label: 'Entraxe entre poteaux $L$', unit: 'm', val: 4.5, step: 0.25 },
+          { id: 'a1', label: 'Dimension poteau rive $a_1$ (sens L)', unit: 'cm', val: 30, step: 5 },
+          { id: 'A1', label: 'Largeur semelle excentrée $A_1$', unit: 'cm', val: 140, step: 5 },
+          { id: 'B1', label: 'Longueur transversale semelle $B_1$', unit: 'cm', val: 180, step: 5 },
+          { id: 'bw', label: 'Largeur poutre de redressement $b_w$', unit: 'cm', val: 35, step: 5 },
+          { id: 'h', label: 'Hauteur poutre de redressement $h$', unit: 'cm', val: 75, step: 5 },
+          { id: 'g_pr', label: 'Poids propre + remblai sur poutre $g_0$', unit: 'kN/ml', val: 10, step: 1 }
+        ]
+      },
+      {
+        id: 'poteau',
+        name: 'Poteau (Compression Centrée)',
+        norm: 'BAEL 91 (Art. B.8.4) / Fasc. 62-V',
+        desc: 'Dimensionnement forfaitaire au flambement d\'un poteau rectangulaire ou circulaire en compression centrée.',
+        pailleNote: `<strong>Repère BAEL B.8.4 :</strong> Le BAEL limite l'élancement $\\lambda = \\frac{l_f}{i} \\le 70$ et applique un coefficient réducteur $\\alpha$ fonction de $\\lambda$ (divisé par $1,10$ si plus de la moitié des charges est appliquée avant 90 jours, et par $1,20$ avant 28 jours). La section réduite $B_r$ retranche $1\\text{ cm}$ sur tout le périmètre.`,
+        fields: [
+          { id: 'shape', label: 'Forme de la section', type: 'select', options: [
+            { value: 'rect', label: 'Rectangulaire (a × b)' },
+            { value: 'circ', label: 'Circulaire (Diamètre D)' }
+          ], val: 'rect' },
+          { id: 'a', label: 'Petit côté $a$ (ou Diamètre $D$)', unit: 'cm', val: 30, step: 5 },
+          { id: 'b', label: 'Grand côté $b$ (si rectangulaire)', unit: 'cm', val: 40, step: 5 },
+          { id: 'l0', label: 'Hauteur libre d\'étage $l_0$', unit: 'm', val: 3.20, step: 0.1 },
+          { id: 'k_flamb', label: 'Coefficient longueur flambement $l_f / l_0$', type: 'select', options: [
+            { value: '0.7', label: '0,70 — Poteau de bâtiment courant (extrémités encastrées dans planchers)' },
+            { value: '0.5', label: '0,50 — Bi-encastré parfait' },
+            { value: '1.0', label: '1,00 — Bi-articulé (poteau isolé)' },
+            { value: '2.0', label: '2,00 — Mât libre en tête / encastré en pied' }
+          ], val: '0.7' },
+          { id: 'N_G', label: 'Effort normal permanent $G$', unit: 'kN', val: 650, step: 10 },
+          { id: 'N_Q', label: 'Effort normal d\'exploitation $Q$', unit: 'kN', val: 280, step: 10 },
+          { id: 'age_charge', label: 'Âge du béton au chargement (> 50% charges)', type: 'select', options: [
+            { value: '90', label: '≥ 90 jours (coef. 1,0)' },
+            { value: '28', label: 'Entre 28 et 90 jours (diviseur 1,10)' },
+            { value: '14', label: '< 28 jours (diviseur 1,20 — utilise fcj)' }
+          ], val: '90' }
+        ]
+      },
+      {
+        id: 'poutre',
+        name: 'Poutre Rectangulaire',
+        norm: 'BAEL 91 (Art. A.4 / A.5) / Fasc. 62-V',
+        desc: 'Calcul en flexion simple (ELU & ELS), effort tranchant, bielle d\'about, condition de non-fragilité et flèche.',
+        pailleNote: `<strong>Repère BAEL :</strong> La frontière sans aciers comprimés dépend de la fissuration : $\\mu_{lu} = 0,392$ (FeE500) en FPP, ou $\\mu_{lu}$ réduit en FP/FTP afin de garantir $\\overline{\\sigma}_{bc} = 0,6 f_{c28}$ à l'ELS. L'effort tranchant vérifie $\\tau_u = \\frac{V_u}{b_0 d} \\le \\overline{\\tau}_u$ et espacement des cadres $s_t \\le \\min(0,9d; 40\\text{ cm})$.`,
+        fields: [
+          { id: 'b0', label: 'Largeur de la poutre $b_0$', unit: 'cm', val: 25, step: 5 },
+          { id: 'h', label: 'Hauteur totale $h$', unit: 'cm', val: 55, step: 5 },
+          { id: 'L', label: 'Portée de calcul $L$', unit: 'm', val: 5.50, step: 0.25 },
+          { id: 'mode_charge', label: 'Mode de saisie des sollicitations', type: 'select', options: [
+            { value: 'repartie', label: 'Charges réparties uniformes (g, q sur travée isostatique)' },
+            { value: 'direct', label: 'Moments & Tranchants directs (Mu, Mser, Vu)' }
+          ], val: 'repartie' },
+          { id: 'g', label: 'Charge permanente répartie $g$ (y c. poids propre)', unit: 'kN/ml', val: 18, step: 1 },
+          { id: 'q', label: 'Charge d\'exploitation répartie $q$', unit: 'kN/ml', val: 12, step: 1 },
+          { id: 'Mu_dir', label: 'Moment ultime $M_u$ (si saisie directe)', unit: 'kN.m', val: 150, step: 5 },
+          { id: 'Mser_dir', label: 'Moment de service $M_{ser}$ (si saisie directe)', unit: 'kN.m', val: 108, step: 5 },
+          { id: 'Vu_dir', label: 'Effort tranchant ultime $V_u$ (si saisie directe)', unit: 'kN', val: 115, step: 5 },
+          { id: 'c_enrob', label: 'Enrobage nominal $c$', unit: 'cm', val: 3, step: 0.5 }
+        ]
+      },
+      {
+        id: 'dalle',
+        name: 'Dalle Pleine (1 ou 2 sens)',
+        norm: 'BAEL 91 (Art. A.8.2 / Annexe E3)',
+        desc: 'Calcul des dalles rectangulaires articulées ou continues portant dans 1 sens ($\\alpha < 0,4$) ou 2 sens ($0,4 \\le \\alpha \\le 1$).',
+        pailleNote: `<strong>Repère BAEL Annexe E3 :</strong> Le seuil de portée bidirectionnelle est $\\alpha = l_x / l_y \\ge 0,40$. Les coefficients $\\mu_x$ et $\\mu_y$ sont tabulés avec $\\nu = 0$ à l'ELU (béton fissuré). Aucune armature d'effort tranchant n'est requise si $h \\ge 15\\text{ cm}$ coulée sans reprise et $\\tau_u \\le 0,07 f_{c28}/\\gamma_b$.`,
+        fields: [
+          { id: 'lx', label: 'Petite portée $l_x$', unit: 'm', val: 4.20, step: 0.1 },
+          { id: 'ly', label: 'Grande portée $l_y$', unit: 'm', val: 5.60, step: 0.1 },
+          { id: 'h', label: 'Épaisseur de la dalle $h$', unit: 'cm', val: 18, step: 1 },
+          { id: 'g_surf', label: 'Charges permanentes totales $g$ (poids propre + chape/revêt.)', unit: 'kN/m²', val: 6.2, step: 0.2 },
+          { id: 'q_surf', label: 'Charge d\'exploitation $q$', unit: 'kN/m²', val: 2.5, step: 0.5 },
+          { id: 'continuite', label: 'Conditions d\'appuis du panneau', type: 'select', options: [
+            { value: 'articule', label: 'Panneau isolé articulé sur 4 côtés (Mt = 1,0 M0)' },
+            { value: 'continu_inter', label: 'Panneau continu intermédiaire (Mt = 0,75 M0, Ma = -0,50 M0)' },
+            { value: 'continu_rive', label: 'Panneau continu de rive (Mt = 0,85 M0, Ma = -0,50 M0)' }
+          ], val: 'continu_inter' },
+          { id: 'c_enrob', label: 'Enrobage $c$', unit: 'cm', val: 2.5, step: 0.5 }
+        ]
+      },
+      {
+        id: 'poutre_T',
+        name: 'Poutre en T (Table de Compression)',
+        norm: 'BAEL 91 (Art. A.4.1,3 / A.5.3,2)',
+        desc: 'Flexion simple d\'une poutre associée à un hourdis comprimé (axe neutre dans la table ou dans la nervure) + couture table/nervure.',
+        pailleNote: `<strong>Repère BAEL Poutre en T :</strong> Si le moment équilibré par la seule table $M_{tu} = b \\cdot h_0 \\cdot f_{bu} (d - h_0/2) \\ge M_u$, la section se calcule comme une section rectangulaire fictive $b \\times h$. La couture table/nervure vérifie $\\tau_{u,couture} = \\frac{V_u \\cdot b_1}{0,9 d \\cdot b \\cdot h_0}$.`,
+        fields: [
+          { id: 'b', label: 'Largeur totale efficace de la table $b$', unit: 'cm', val: 110, step: 5 },
+          { id: 'h0', label: 'Épaisseur de la table (hourdis) $h_0$', unit: 'cm', val: 14, step: 1 },
+          { id: 'b0', label: 'Largeur de la nervure (âme) $b_0$', unit: 'cm', val: 25, step: 5 },
+          { id: 'h', label: 'Hauteur totale de la poutre $h$', unit: 'cm', val: 65, step: 5 },
+          { id: 'Mu', label: 'Moment fléchissant ultime $M_u$', unit: 'kN.m', val: 380, step: 10 },
+          { id: 'Mser', label: 'Moment fléchissant de service $M_{ser}$', unit: 'kN.m', val: 270, step: 10 },
+          { id: 'Vu', label: 'Effort tranchant ultime $V_u$', unit: 'kN', val: 210, step: 10 },
+          { id: 'c_enrob', label: 'Enrobage nominal $c$', unit: 'cm', val: 3, step: 0.5 }
+        ]
+      },
+      {
+        id: 'poutre_I',
+        name: 'Poutre en I (Double Table / Préfabriquée)',
+        norm: 'BAEL 91 / Fascicule 62 Titre V',
+        desc: 'Section symétrique ou dissymétrique à double membrure (poutre d\'ouvrage d\'art ou charpente BA) — Flexion ELU/ELS & cisaillement d\'âme.',
+        pailleNote: `<strong>Application Fascicule 62 Titre V & BAEL :</strong> L'algorithme intègre la géométrie exacte à trois zones (membrure supérieure $b_s \\times h_s$, âme $b_w$, membrure inférieure $b_i \\times h_i$) pour déterminer la position exacte de l'axe neutre à l'ELU et l'inertie fissurée $I_{fiss}$ à l'ELS.`,
+        fields: [
+          { id: 'bs', label: 'Largeur membrure supérieure $b_s$', unit: 'cm', val: 60, step: 5 },
+          { id: 'hs', label: 'Épaisseur membrure supérieure $h_s$', unit: 'cm', val: 14, step: 1 },
+          { id: 'bw', label: 'Épaisseur de l\'âme $b_w$', unit: 'cm', val: 18, step: 2 },
+          { id: 'bi', label: 'Largeur talon inférieur $b_i$', unit: 'cm', val: 45, step: 5 },
+          { id: 'hi', label: 'Épaisseur talon inférieur $h_i$', unit: 'cm', val: 16, step: 1 },
+          { id: 'h', label: 'Hauteur totale $h$', unit: 'cm', val: 110, step: 5 },
+          { id: 'Mu', label: 'Moment fléchissant ultime $M_u$', unit: 'kN.m', val: 920, step: 20 },
+          { id: 'Mser', label: 'Moment fléchissant de service $M_{ser}$', unit: 'kN.m', val: 650, step: 20 },
+          { id: 'Vu', label: 'Effort tranchant ultime $V_u$', unit: 'kN', val: 410, step: 10 },
+          { id: 'c_enrob', label: 'Enrobage nominal $c$', unit: 'cm', val: 3.5, step: 0.5 }
+        ]
+      }
+    ];
+
+    // =========================================================================
+    // 3. GESTION DE L'ÉTAT & RENDERING UI
+    // =========================================================================
+    let currentModuleId = 'semelle_isolee';
+    const userState = {};
+
+    // Initialisation des valeurs par défaut
+    MODULES.forEach(m => {
+      userState[m.id] = {};
+      m.fields.forEach(f => { userState[m.id][f.id] = f.val; });
+    });
+
+    function getMaterials() {
+      const fc28 = parseFloat(document.getElementById('global-fc28').value) || 25;
+      const fe = parseFloat(document.getElementById('global-fe').value) || 500;
+      const fiss = document.getElementById('global-fiss').value || 'FPP';
+      const sit = document.getElementById('global-sit').value || 'durable';
+
+      const gamma_b = sit === 'durable' ? 1.5 : 1.15;
+      const gamma_s = sit === 'durable' ? 1.15 : 1.0;
+      const ft28 = 0.6 + 0.06 * fc28; // BAEL A.2.1,12
+      const fbu = (0.85 * fc28) / (1.0 * gamma_b); // theta = 1 (>=24h)
+      const fsu = fe / gamma_s;
+      const sigma_bc_lim = 0.6 * fc28; // BAEL A.4.5,2
+
+      // Contrainte limite traction acier ELS (BAEL A.4.5,3)
+      let sigma_s_lim = fe;
+      if (fiss === 'FP') {
+        sigma_s_lim = Math.min((2 / 3) * fe, Math.max(0.5 * fe, 110 * Math.sqrt(1.6 * ft28)));
+      } else if (fiss === 'FTP') {
+        sigma_s_lim = Math.min(0.5 * fe, 90 * Math.sqrt(1.6 * ft28));
+      }
+
+      const Es = 200000;
+      const Eij = 11000 * Math.cbrt(fc28);
+      const Evj = Eij / 3;
+      const n_equiv = 15;
+
+      return { fc28, fe, fiss, sit, gamma_b, gamma_s, ft28, fbu, fsu, sigma_bc_lim, sigma_s_lim, Es, Eij, Evj, n_equiv };
+    }
+
+    function renderMatSummary() {
+      const m = getMaterials();
+      const bar = document.getElementById('mat-summary-bar');
+      if (!bar) return;
+      bar.innerHTML = `
+        <div class="flex flex-wrap items-center gap-4">
+          <span><strong>$f_{c28}$</strong> = <code class="font-mono-tech text-slate-900">${m.fc28} MPa</code></span>
+          <span><strong>$f_{t28}$</strong> = <code class="font-mono-tech text-slate-900">${m.ft28.toFixed(2)} MPa</code></span>
+          <span><strong>$f_{bu}$</strong> = <code class="font-mono-tech text-amber-700 font-semibold">${m.fbu.toFixed(2)} MPa</code></span>
+          <span><strong>$f_{su}$</strong> = <code class="font-mono-tech text-amber-700 font-semibold">${m.fsu.toFixed(1)} MPa</code></span>
+          <span><strong>$\\overline{\\sigma}_{bc}$ (ELS)</strong> = <code class="font-mono-tech text-slate-900">${m.sigma_bc_lim.toFixed(1)} MPa</code></span>
+          <span><strong>$\\overline{\\sigma}_s$ (${m.fiss})</strong> = <code class="font-mono-tech text-slate-900">${m.fiss === 'FPP' ? 'Non limitée (ELU)' : m.sigma_s_lim.toFixed(1) + ' MPa'}</code></span>
+        </div>
+        <div class="text-slate-400 font-mono-tech text-[11px]">$n = E_s / E_b = 15$ • $\\theta = 1,0$</div>
+      `;
+      renderMath(bar);
+    }
+
+    function renderTabs() {
+      const nav = document.getElementById('nav-tabs');
+      if (!nav) return;
+      nav.innerHTML = MODULES.map(m => {
+        const active = m.id === currentModuleId;
+        return `
+          <button type="button" onclick="selectModule('${m.id}')"
+            class="px-3.5 py-2.5 text-xs font-semibold whitespace-nowrap border-b-2 transition-all cursor-pointer ${
+              active
+                ? 'border-amber-400 text-amber-400 bg-slate-900/60'
+                : 'border-transparent text-slate-300 hover:text-white hover:bg-slate-700/50'
+            }">
+            ${m.name}
+          </button>
+        `;
+      }).join('');
+    }
+
+    function selectModule(id) {
+      currentModuleId = id;
+      renderTabs();
+      renderInputs();
+      compute(false);
+    }
+
+    function resetCurrentDefaults() {
+      const mod = MODULES.find(m => m.id === currentModuleId);
+      mod.fields.forEach(f => { userState[mod.id][f.id] = f.val; });
+      renderInputs();
+      compute(true);
+    }
+
+    function renderInputs() {
+      const mod = MODULES.find(m => m.id === currentModuleId);
+      const state = userState[mod.id];
+      document.getElementById('module-norm-badge').textContent = mod.norm;
+      document.getElementById('module-title').textContent = mod.name;
+      document.getElementById('paille-note-box').innerHTML = mod.pailleNote;
+
+      const form = document.getElementById('module-inputs');
+      const visibleFields = mod.fields.filter(f => !f.showIf || f.showIf(state));
+
+      form.innerHTML = visibleFields.map(f => {
+        const val = state[f.id];
+        if (f.type === 'select') {
+          return `
+            <div>
+              <label for="inp-${f.id}" class="block text-xs font-semibold text-slate-700 mb-1">${f.label}</label>
+              <select id="inp-${f.id}" onchange="updateField('${f.id}', this.value)"
+                class="w-full rounded-lg border border-slate-300 bg-slate-50 px-3 py-2 text-xs text-slate-900 focus:border-amber-500 focus:bg-white focus:outline-none">
+                ${f.options.map(o => `<option value="${o.value}" ${String(val) === String(o.value) ? 'selected' : ''}>${o.label}</option>`).join('')}
+              </select>
+            </div>
+          `;
+        }
+        return `
+          <div class="flex items-center justify-between gap-3">
+            <label for="inp-${f.id}" class="text-xs font-medium text-slate-700 flex-1">${f.label}</label>
+            <div class="flex items-center w-36">
+              <input type="number" id="inp-${f.id}" value="${val}" step="${f.step || 'any'}"
+                oninput="updateField('${f.id}', parseFloat(this.value) || 0)"
+                class="w-full rounded-l-lg border border-slate-300 bg-slate-50 px-2.5 py-1.5 text-right font-mono-tech text-xs font-semibold text-slate-900 focus:border-amber-500 focus:bg-white focus:outline-none" />
+              <span class="bg-slate-100 border border-l-0 border-slate-300 rounded-r-lg px-2 py-1.5 text-[11px] font-mono-tech text-slate-500 min-w-[46px] text-center">
+                ${f.unit}
+              </span>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      renderMath(form);
+      renderMath(document.getElementById('paille-note-box'));
+    }
+
+    function updateField(fieldId, value) {
+      userState[currentModuleId][fieldId] = value;
+      if (['reglement_fond', 'fasc62_essai', 'homothetie', 'shape', 'mode_charge'].includes(fieldId)) {
+        renderInputs();
+      }
+      compute(false);
+    }
+
+    function syncInputsFromDOM() {
+      const mod = MODULES.find(m => m.id === currentModuleId);
+      if (!mod) return;
+      mod.fields.forEach(f => {
+        const el = document.getElementById(`inp-${f.id}`);
+        if (el) {
+          userState[mod.id][f.id] = f.type === 'select' ? el.value : (parseFloat(el.value) || 0);
+        }
+      });
+    }
+
+    // =========================================================================
+    // 4. MOTEUR DE FLEXION SIMPLE RECTANGULAIRE (BAEL 91 ELU & ELS)
+    // =========================================================================
+    function solveFlexionRect(b_m, h_m, d_m, c_prime_m, Mu_MNm, Mser_MNm, mat) {
+      const { fc28, fe, fiss, ft28, fbu, fsu, sigma_bc_lim, sigma_s_lim, n_equiv } = mat;
+
+      const mu_bu = Mu_MNm / (b_m * d_m * d_m * fbu);
+      const eps_sl = fsu / 200000;
+      const alpha_l = 3.5 / (3.5 + 1000 * eps_sl);
+      const mu_l = 0.8 * alpha_l * (1 - 0.4 * alpha_l);
+
+      let mu_lim_eff = mu_l;
+      if (fiss !== 'FPP' && Mser_MNm > 0) {
+        const gamma = Mu_MNm / Mser_MNm;
+        const mu_lu_els = (gamma - 1) / 3.2 + (fc28 / 100) * 0.45;
+        mu_lim_eff = Math.min(mu_l, Math.max(0.20, mu_lu_els));
+      }
+
+      let As_elu_cm2 = 0, Asc_elu_cm2 = 0, alpha = 0, z_m = 0, pivot = 'A', hasComp = false;
+
+      if (mu_bu <= mu_lim_eff) {
+        alpha = 1.25 * (1 - Math.sqrt(Math.max(0, 1 - 2 * mu_bu)));
+        z_m = d_m * (1 - 0.4 * alpha);
+        pivot = mu_bu <= 0.186 ? 'A (Acier à 10‰)' : 'B (Béton à 3,5‰)';
+        As_elu_cm2 = (Mu_MNm / (z_m * fsu)) * 1e4;
+      } else {
+        hasComp = true;
+        pivot = 'B + Aciers comprimés';
+        alpha = alpha_l;
+        z_m = d_m * (1 - 0.4 * alpha_l);
+        const M_lu = mu_lim_eff * b_m * d_m * d_m * fbu;
+        const delta_M = Mu_MNm - M_lu;
+        const y_l = alpha_l * d_m;
+        const eps_sc = 3.5e-3 * (y_l - c_prime_m) / y_l;
+        const sigma_sc = Math.min(fsu, Math.max(0, 200000 * eps_sc));
+        Asc_elu_cm2 = sigma_sc > 10 ? (delta_M / ((d_m - c_prime_m) * sigma_sc)) * 1e4 : 0;
+        As_elu_cm2 = (M_lu / (z_m * fsu) + delta_M / ((d_m - c_prime_m) * fsu)) * 1e4;
+      }
+
+      let As_els_cm2 = 0, sigma_bc_ser = 0, sigma_s_ser = 0, y1_m = 0, I_fiss = 0;
+
+      if (Mser_MNm > 0 && fiss !== 'FPP') {
+        const alpha_ser = (n_equiv * sigma_bc_lim) / (n_equiv * sigma_bc_lim + sigma_s_lim);
+        const y1_lim = alpha_ser * d_m;
+        const z_ser = d_m - y1_lim / 3;
+        As_els_cm2 = (Mser_MNm / (z_ser * sigma_s_lim)) * 1e4;
+      }
+
+      const As_min_cm2 = 0.23 * b_m * d_m * (ft28 / fe) * 1e4;
+      const As_req_cm2 = Math.max(As_elu_cm2, As_els_cm2, As_min_cm2);
+
+      const As_m2 = As_req_cm2 * 1e-4;
+      const Asc_m2 = Asc_elu_cm2 * 1e-4;
+      const A_q = 0.5 * b_m;
+      const B_q = n_equiv * (As_m2 + Asc_m2);
+      const C_q = -n_equiv * (As_m2 * d_m + Asc_m2 * c_prime_m);
+      y1_m = (-B_q + Math.sqrt(B_q * B_q - 4 * A_q * C_q)) / (2 * A_q);
+      I_fiss = (b_m * Math.pow(y1_m, 3)) / 3 + n_equiv * As_m2 * Math.pow(d_m - y1_m, 2) + n_equiv * Asc_m2 * Math.pow(y1_m - c_prime_m, 2);
+
+      if (Mser_MNm > 0 && I_fiss > 0) {
+        sigma_bc_ser = (Mser_MNm * y1_m) / I_fiss;
+        sigma_s_ser = n_equiv * (Mser_MNm * (d_m - y1_m)) / I_fiss;
+      }
+
+      return {
+        mu_bu, mu_l, mu_lim_eff, alpha, z_m, pivot, hasComp,
+        As_elu_cm2, Asc_elu_cm2, As_els_cm2, As_min_cm2, As_req_cm2,
+        y1_m, I_fiss, sigma_bc_ser, sigma_s_ser
+      };
+    }
+
+    // =========================================================================
+    // 5. CALCULS SPÉCIFIQUES PAR ÉLÉMENT
+    // =========================================================================
+    function validateInputs(mod, state) {
+      const errors = [];
+      const activeFields = mod.fields.filter(f => !f.showIf || f.showIf(state));
+      const numericFields = activeFields.filter(f => f.type !== 'select');
+
+      numericFields.forEach(field => {
+        const value = state[field.id];
+        if (!Number.isFinite(value)) {
+          errors.push(`${field.label} doit être un nombre fini.`);
+        } else if (value < 0) {
+          errors.push(`${field.label} ne peut pas être négatif.`);
+        }
+      });
+
+      const requirePositive = (fieldId) => {
+        const field = numericFields.find(item => item.id === fieldId);
+        if (field && !(state[fieldId] > 0)) {
+          errors.push(`${field.label} doit être strictement positif.`);
+        }
+      };
+
+      switch (mod.id) {
+        case 'semelle_isolee':
+          ['a', 'b'].forEach(requirePositive);
+          if (state.N_G + state.N_Q <= 0) errors.push('La charge totale doit être strictement positive.');
+          if (state.h_imp > 0 && state.h_imp <= state.c_enrob + 1.5) errors.push('La hauteur imposée doit laisser une hauteur utile positive.');
+          if (state.homothetie === 'manual') {
+            ['A_imp', 'B_imp'].forEach(requirePositive);
+            if (state.A_imp <= state.a || state.B_imp <= state.b) errors.push('Les dimensions de la semelle doivent dépasser celles du poteau.');
+          }
+          if (state.reglement_fond === 'DTU1312' || state.fasc62_essai === 'direct') requirePositive('sigma_sol');
+          if (state.reglement_fond === 'FASC62') {
+            ['D_ancrage', 'gamma_sol'].forEach(requirePositive);
+            if (state.fasc62_essai === 'pressiometre') requirePositive('ple_star');
+            if (state.fasc62_essai === 'penetrometre') requirePositive('qce_cpt');
+          }
+          break;
+        case 'semelle_filante':
+          requirePositive('b0');
+          if (state.G_ml + state.Q_ml <= 0) errors.push('La charge totale par mètre doit être strictement positive.');
+          if (state.h_imp > 0 && state.h_imp <= state.c_enrob + 1) errors.push('La hauteur imposée doit laisser une hauteur utile positive.');
+          if (state.reglement_fond === 'DTU1312' || state.fasc62_essai === 'direct') requirePositive('sigma_sol');
+          if (state.reglement_fond === 'FASC62') {
+            ['D_ancrage', 'gamma_sol'].forEach(requirePositive);
+            if (state.fasc62_essai === 'pressiometre') requirePositive('ple_star');
+            if (state.fasc62_essai === 'penetrometre') requirePositive('qce_cpt');
+          }
+          break;
+        case 'poutre_redressement': {
+          ['L_entraxe', 'a1', 'A1', 'B1', 'bw', 'h'].forEach(requirePositive);
+          if (state.h <= 4.5) errors.push('La hauteur de la poutre doit laisser une hauteur utile positive.');
+          if (state.A1 <= state.a1) errors.push('La largeur de la semelle excentrée doit dépasser celle du poteau.');
+          if (state.L_entraxe <= (state.A1 - state.a1) / 200) errors.push('L’entraxe doit dépasser l’excentrement de la semelle.');
+          if (state.N1_G + state.N1_Q <= 0) errors.push('La charge du poteau de rive doit être strictement positive.');
+          if (state.reglement_fond === 'DTU1312' || state.fasc62_essai === 'direct') requirePositive('sigma_sol');
+          if (state.reglement_fond === 'FASC62') {
+            ['D_ancrage', 'gamma_sol'].forEach(requirePositive);
+            if (state.fasc62_essai === 'pressiometre') requirePositive('ple_star');
+            if (state.fasc62_essai === 'penetrometre') requirePositive('qce_cpt');
+          }
+          break;
+        }
+        case 'poteau':
+          ['a', 'l0'].forEach(requirePositive);
+          if (state.a <= 2 || (state.shape === 'rect' && state.b <= 2)) errors.push('La section du poteau doit dépasser 2 cm dans chaque direction.');
+          if (state.shape === 'rect') requirePositive('b');
+          if (state.N_G + state.N_Q <= 0) errors.push('La charge totale doit être strictement positive.');
+          break;
+        case 'poutre':
+          ['b0', 'h', 'L'].forEach(requirePositive);
+          if (state.h <= state.c_enrob + 2) errors.push('La hauteur doit être supérieure à l’enrobage et à la hauteur utile minimale.');
+          break;
+        case 'dalle':
+          ['lx', 'ly', 'h'].forEach(requirePositive);
+          if (state.h <= state.c_enrob + 2) errors.push('L’épaisseur doit être supérieure à l’enrobage et à la hauteur utile minimale.');
+          break;
+        case 'poutre_T':
+          ['b', 'h0', 'b0', 'h'].forEach(requirePositive);
+          if (state.b <= state.b0) errors.push('La largeur de table doit dépasser celle de la nervure.');
+          if (state.h <= state.h0 + state.c_enrob + 2.5) errors.push('La hauteur totale doit laisser une hauteur utile positive sous la table.');
+          break;
+        case 'poutre_I':
+          ['bs', 'hs', 'bw', 'bi', 'hi', 'h'].forEach(requirePositive);
+          if (state.bs < state.bw || state.bi < state.bw) errors.push('La largeur des membrures doit être au moins égale à celle de l’âme.');
+          if (state.h <= state.hs + state.hi) errors.push('La hauteur totale doit dépasser l’épaisseur cumulée des membrures.');
+          if (state.h <= state.c_enrob + 3) errors.push('La hauteur totale doit laisser une hauteur utile positive.');
+          break;
+      }
+
+      return [...new Set(errors)];
+    }
+
+    function compute(userTriggered = false) {
+      syncInputsFromDOM();
+      const mod = MODULES.find(m => m.id === currentModuleId);
+      const s = userState[currentModuleId];
+      const errors = validateInputs(mod, s);
+      const feedback = document.getElementById('compute-feedback');
+
+      if (errors.length > 0) {
+        if (feedback) {
+          feedback.textContent = `Calcul suspendu : ${errors.join(' ')}`;
+          feedback.classList.remove('hidden', 'text-emerald-700');
+          feedback.classList.add('text-red-700');
+        }
+        document.getElementById('kpi-panel').textContent = 'Corrigez les données signalées pour afficher les résultats.';
+        document.getElementById('svg-container').replaceChildren();
+        document.getElementById('calculation-steps').replaceChildren();
+        document.getElementById('global-verdict-badge').textContent = 'CALCUL BLOQUÉ — DONNÉES À CORRIGER';
+        return;
+      }
+
+      if (feedback) {
+        feedback.classList.add('hidden');
+        feedback.classList.remove('text-red-700');
+        feedback.classList.add('text-emerald-700');
+      }
+
+      const mat = getMaterials();
+      let res = null;
+
+      switch (currentModuleId) {
+        case 'semelle_isolee': res = calcSemelleIsolee(s, mat); break;
+        case 'semelle_filante': res = calcSemelleFilante(s, mat); break;
+        case 'poutre_redressement': res = calcPoutreRedressement(s, mat); break;
+        case 'poteau': res = calcPoteau(s, mat); break;
+        case 'poutre': res = calcPoutre(s, mat); break;
+        case 'dalle': res = calcDalle(s, mat); break;
+        case 'poutre_T': res = calcPoutreT(s, mat); break;
+        case 'poutre_I': res = calcPoutreI(s, mat); break;
+      }
+
+      renderResults(res);
+
+      if (userTriggered) {
+        if (feedback) {
+          feedback.textContent = `✓ Calcul mis à jour à ${new Date().toLocaleTimeString('fr-FR')}`;
+          feedback.classList.remove('hidden');
+        }
+        if (window.innerWidth < 1024) {
+          document.getElementById('results-section')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      }
+    }
+
+    // --- A. SEMELLE ISOLÉE (DTU 13.12 OU FASCICULE 62-V) ---
+    function calcSemelleIsolee(s, mat) {
+      const { reglement_fond, N_G, N_Q, M_ser, M_u_imp, a, b, sigma_sol, c_enrob, homothetie, A_imp, B_imp, h_imp } = s;
+      const isFasc62 = reglement_fond === 'FASC62';
+      const Nser_kN = N_G + N_Q;
+      const Nu_kN = 1.35 * N_G + 1.5 * N_Q;
+      const Nser_MN = Nser_kN / 1000;
+      const Nu_MN = Nu_kN / 1000;
+      const Mser_MNm = M_ser / 1000;
+      const Mu_MNm = (M_u_imp || 0) / 1000;
+
+      let A_cm, B_cm;
+      if (homothetie === 'auto') {
+        let S_min_m2;
+        if (!isFasc62) {
+          S_min_m2 = (Nser_MN * 1.05) / Math.max(0.02, sigma_sol);
+        } else {
+          const bearingEst = computeFasc62Bearing(s, 1.5, 1.5, mat.sit);
+          S_min_m2 = (Nu_MN * 1.06) / Math.max(0.03, bearingEst.q_adm_ELU);
+        }
+        const ratio = a / b;
+        A_cm = Math.ceil((Math.sqrt(S_min_m2 * ratio) * 100) / 5) * 5;
+        B_cm = Math.ceil((A_cm / ratio) / 5) * 5;
+        A_cm = Math.max(A_cm, a + 20);
+        B_cm = Math.max(B_cm, b + 20);
+      } else {
+        A_cm = A_imp;
+        B_cm = B_imp;
+      }
+
+      const d_min_cm = Math.max((A_cm - a) / 4, (B_cm - b) / 4);
+      let h_cm = h_imp > 0 ? h_imp : Math.ceil((d_min_cm + c_enrob + 2) / 5) * 5;
+      h_cm = Math.max(h_cm, 25);
+      const d_cm = h_cm - c_enrob - 1.5;
+
+      const A_m = A_cm / 100;
+      const B_m = B_cm / 100;
+      const S_m2 = A_m * B_m;
+      const Pp_kN = S_m2 * (h_cm / 100) * 25;
+      const Nser_tot_MN = (Nser_kN + Pp_kN) / 1000;
+      const Nu_tot_MN = (Nu_kN + 1.35 * Pp_kN) / 1000;
+
+      let solOk = false, q_calc_display = 0, q_lim_display = 0, solStepHtml = '';
+
+      if (!isFasc62) {
+        // DTU 13.12 (ELS)
+        const e_m = Nser_tot_MN > 0 ? Math.abs(Mser_MNm) / Nser_tot_MN : 0;
+        let sigma_max = 0, sigma_min = 0, q_ref = 0;
+        if (e_m <= B_m / 6) {
+          sigma_max = (Nser_tot_MN / S_m2) * (1 + (6 * e_m) / B_m);
+          sigma_min = (Nser_tot_MN / S_m2) * (1 - (6 * e_m) / B_m);
+          q_ref = (3 * sigma_max + sigma_min) / 4;
+        } else {
+          const l_comp = 3 * (B_m / 2 - e_m);
+          sigma_max = l_comp > 0 ? (2 * Nser_tot_MN) / (3 * A_m * (B_m / 2 - e_m)) : 999;
+          sigma_min = 0;
+          q_ref = 0.75 * sigma_max;
+        }
+        solOk = q_ref <= sigma_sol && e_m <= B_m / 3;
+        q_calc_display = q_ref;
+        q_lim_display = sigma_sol;
+        solStepHtml = `
+          <p>• <strong>Méthode DTU 13.12 (Justification à l'ELS) :</strong> $N_{ser,tot} = \\mathbf{${(Nser_kN + Pp_kN).toFixed(1)}\\text{ kN}}$, excentrement $e = ${(e_m*100).toFixed(1)}\\text{ cm}$.</p>
+          <p>• Contraintes sous semelle : $\\sigma_{max} = ${sigma_max.toFixed(3)}\\text{ MPa}$, $\\sigma_{min} = ${sigma_min.toFixed(3)}\\text{ MPa}$.</p>
+          <p>• Contrainte de référence : $q_{ref} = \\frac{3\\sigma_{max} + \\sigma_{min}}{4} = \\mathbf{${q_ref.toFixed(3)}\\text{ MPa}} ${solOk ? '\\le' : '>'} \\overline{\\sigma}_{sol} = ${sigma_sol.toFixed(2)}\\text{ MPa}$.</p>
+        `;
+      } else {
+        // Fascicule 62 Titre V (ELU & ELS + Essai Pressiométrique ou Pénétrométrique)
+        const bearing = computeFasc62Bearing(s, A_m, B_m, mat.sit);
+        const eu_m = Nu_tot_MN > 0 ? Math.abs(Mu_MNm) / Nu_tot_MN : 0;
+        const B_prime = Math.max(0.1, B_m - 2 * eu_m);
+        const q_ref_ELU = Nu_tot_MN / (A_m * B_prime);
+
+        const eser_m = Nser_tot_MN > 0 ? Math.abs(Mser_MNm) / Nser_tot_MN : 0;
+        const B_prime_ser = Math.max(0.1, B_m - 2 * eser_m);
+        const q_ref_ELS = Nser_tot_MN / (A_m * B_prime_ser);
+        const decollementOk = eser_m <= B_m / 6; // 100% comprimé à l'ELS rare
+
+        solOk = q_ref_ELU <= bearing.q_adm_ELU && q_ref_ELS <= bearing.q_adm_ELS && eu_m <= B_m / 3 && decollementOk;
+        q_calc_display = q_ref_ELU;
+        q_lim_display = bearing.q_adm_ELU;
+        solStepHtml = `
+          ${bearing.formulaHtml}
+          <p>• <strong>Vérification ELU (Meyerhof) :</strong> excentrement $e_u = ${(eu_m*100).toFixed(1)}\\text{ cm}$, largeur réduite $B' = B - 2e_u = ${(B_prime*100).toFixed(1)}\\text{ cm}$ $\\Rightarrow q_{ref,ELU} = \\frac{N_{u,tot}}{A \\cdot B'} = \\mathbf{${q_ref_ELU.toFixed(3)}\\text{ MPa}} ${q_ref_ELU <= bearing.q_adm_ELU ? '\\le' : '>'} q_{adm,ELU} = ${bearing.q_adm_ELU.toFixed(3)}\\text{ MPa}$.</p>
+          <p>• <strong>Vérification ELS :</strong> $q_{ref,ELS} = \\mathbf{${q_ref_ELS.toFixed(3)}\\text{ MPa}} ${q_ref_ELS <= bearing.q_adm_ELS ? '\\le' : '>'} q_{adm,ELS} = ${bearing.q_adm_ELS.toFixed(3)}\\text{ MPa}$ ; excentrement $e_{ser} = ${(eser_m*100).toFixed(1)}\\text{ cm} ${decollementOk ? '\\le' : '>'} B/6 = ${(B_m*100/6).toFixed(1)}\\text{ cm}$.</p>
+        `;
+      }
+
+      const rigidOk = d_cm >= d_min_cm - 0.1;
+      const coef_fiss = mat.fiss === 'FP' ? 1.10 : (mat.fiss === 'FTP' ? 1.50 : 1.0);
+      const As_x_cm2 = ((Nu_MN * (A_cm - a)) / (8 * d_cm * mat.fsu)) * 1e4 * coef_fiss;
+      const As_y_cm2 = ((Nu_MN * (B_cm - b)) / (8 * d_cm * mat.fsu)) * 1e4 * coef_fiss;
+
+      const choiceX = proposeRebarChoice(As_x_cm2, 4, B_cm, [10, 12, 14, 16, 20]);
+      const choiceY = proposeRebarChoice(As_y_cm2, 4, A_cm, [10, 12, 14, 16, 20]);
+
+      const uc_m = 2 * ((a + b + 2 * d_cm) / 100);
+      const h_m = h_cm / 100;
+      const S_cone = Math.min(S_m2, ((a + 2 * d_cm) / 100) * ((b + 2 * d_cm) / 100));
+      const Qu_poinc_MN = Nu_MN * (1 - S_cone / S_m2);
+      const Qu_lim_MN = 0.045 * uc_m * h_m * (mat.fc28 / mat.gamma_b);
+      const poincOk = Qu_poinc_MN <= Qu_lim_MN;
+
+      const tau_su = 0.6 * Math.pow(1.5, 2) * mat.ft28;
+      const phi_max_cm = Math.max(choiceX.phi, choiceY.phi) / 10;
+      const ls_cm = (phi_max_cm * mat.fe) / (4 * tau_su);
+      const ancrageMode = ls_cm <= B_cm / 4 ? 'Barres droites (ls ≤ B/4)' : 'Crochets d\'extrémité requis (ls > B/4)';
+
+      const allOk = solOk && rigidOk && poincOk;
+
+      const svg = `
+        <svg viewBox="0 0 300 210" class="w-full h-full">
+          <rect x="30" y="165" width="240" height="8" fill="#cbd5e1" stroke="#64748b" stroke-width="1"/>
+          <rect x="45" y="115" width="210" height="50" fill="#e2e8f0" stroke="#1e293b" stroke-width="2"/>
+          <rect x="125" y="35" width="50" height="80" fill="#cbd5e1" stroke="#1e293b" stroke-width="2"/>
+          <line x1="135" y1="115" x2="65" y2="155" stroke="#f59e0b" stroke-width="1.5" stroke-dasharray="4,3"/>
+          <line x1="165" y1="115" x2="235" y2="155" stroke="#f59e0b" stroke-width="1.5" stroke-dasharray="4,3"/>
+          <line x1="52" y1="156" x2="248" y2="156" stroke="#dc2626" stroke-width="2.5"/>
+          <circle cx="65" cy="152" r="2.5" fill="#1d4ed8"/><circle cx="95" cy="152" r="2.5" fill="#1d4ed8"/>
+          <circle cx="125" cy="152" r="2.5" fill="#1d4ed8"/><circle cx="150" cy="152" r="2.5" fill="#1d4ed8"/>
+          <circle cx="175" cy="152" r="2.5" fill="#1d4ed8"/><circle cx="205" cy="152" r="2.5" fill="#1d4ed8"/>
+          <circle cx="235" cy="152" r="2.5" fill="#1d4ed8"/>
+          <path d="M132,35 L132,152 L115,152" fill="none" stroke="#1e293b" stroke-width="1.5"/>
+          <path d="M168,35 L168,152 L185,152" fill="none" stroke="#1e293b" stroke-width="1.5"/>
+          <line x1="150" y1="8" x2="150" y2="30" stroke="#dc2626" stroke-width="2"/>
+          <polygon points="150,33 146,25 154,25" fill="#dc2626"/>
+          <text x="160" y="22" font-size="10" font-weight="bold" fill="#dc2626">Nu = ${Nu_kN.toFixed(0)} kN</text>
+          <text x="150" y="192" font-size="11" font-weight="bold" text-anchor="middle" fill="#0f172a">A × B = ${A_cm} × ${B_cm} cm (${isFasc62 ? 'Fasc. 62-V' : 'DTU 13.12'})</text>
+          <text x="275" y="143" font-size="10" text-anchor="middle" fill="#0f172a">h=${h_cm}</text>
+          <text x="150" y="80" font-size="10" text-anchor="middle" fill="#334155">${a}×${b}</text>
+        </svg>
+      `;
+
+      return {
+        allOk,
+        svg,
+        kpis: [
+          { label: 'Coffrage Semelle $A \\times B \\times h$', value: `${A_cm} × ${B_cm} × ${h_cm} cm`, sub: `Hauteur utile $d = ${d_cm.toFixed(1)}$ cm (min ${d_min_cm.toFixed(1)} cm)`, ok: rigidOk },
+          { label: isFasc62 ? 'Portance Sol ELU (Fasc. 62-V)' : 'Contrainte Sol ELS (DTU 13.12)', value: `${q_calc_display.toFixed(3)} MPa`, sub: `Limite admissible = ${q_lim_display.toFixed(3)} MPa`, ok: solOk },
+          { label: 'Nappe // $A$ ($A_{sx}$)', value: `${As_x_cm2.toFixed(2)} cm²`, sub: choiceX.text, ok: true },
+          { label: 'Nappe // $B$ ($A_{sy}$)', value: `${As_y_cm2.toFixed(2)} cm²`, sub: choiceY.text, ok: true }
+        ],
+        steps: [
+          {
+            title: `1. Sollicitations & Prédimensionnement Géométrique (${isFasc62 ? 'Fascicule 62-V' : 'DTU 13.12'})`,
+            badge: rigidOk ? 'CONFORME' : 'HAUTEUR INSUFFISANTE',
+            ok: rigidOk,
+            body: `
+              <p>• Effort normal à l'ELS : $N_{ser} = G + Q = \\mathbf{${Nser_kN.toFixed(1)}\\text{ kN}}$ ; Effort ultime : $N_u = 1,35 G + 1,5 Q = \\mathbf{${Nu_kN.toFixed(1)}\\text{ kN}}$.</p>
+              <p>• Dimensions retenues : $A = \\mathbf{${A_cm}\\text{ cm}}$, $B = \\mathbf{${B_cm}\\text{ cm}}$ (Surface $S = ${S_m2.toFixed(2)}\\text{ m}^2$).</p>
+              <p>• Condition de rigidité (méthode des bielles) : $d \\ge \\max\\left(\\frac{A-a}{4} ; \\frac{B-b}{4}\\right) = \\mathbf{${d_min_cm.toFixed(1)}\\text{ cm}}$. On adopte $h = \\mathbf{${h_cm}\\text{ cm}}$ soit $d = ${d_cm.toFixed(1)}\\text{ cm}$.</p>
+            `
+          },
+          {
+            title: `2. Vérification de la Portance du Sol (${isFasc62 ? 'Fascicule 62 Titre V' : 'DTU 13.12'})`,
+            badge: solOk ? 'SOL VÉRIFIÉ' : 'DÉPASSEMENT SOL',
+            ok: solOk,
+            body: solStepHtml
+          },
+          {
+            title: '3. Calcul des Armatures par la Méthode des Bielles (BAEL / DTU 13.12)',
+            badge: `Coef. fissuration = ${coef_fiss.toFixed(2)}`,
+            ok: true,
+            body: `
+              <p>• Sens parallèle à $A$ : $A_{sx} = k_{fiss} \\frac{N_u (A - a)}{8 \\cdot d \\cdot f_{su}} = \\mathbf{${As_x_cm2.toFixed(2)}\\text{ cm}^2}$ $\\rightarrow$ <strong>${choiceX.text}</strong>.</p>
+              <p>• Sens parallèle à $B$ : $A_{sy} = k_{fiss} \\frac{N_u (B - b)}{8 \\cdot d \\cdot f_{su}} = \\mathbf{${As_y_cm2.toFixed(2)}\\text{ cm}^2}$ $\\rightarrow$ <strong>${choiceY.text}</strong>.</p>
+              <p>• Longueur de scellement droit : $l_s = \\frac{\\phi \\cdot f_e}{4 \\tau_{su}} = ${ls_cm.toFixed(1)}\\text{ cm}$ ($\\tau_{su} = ${tau_su.toFixed(2)}\\text{ MPa}$). Arrêt des barres : <strong>${ancrageMode}</strong>.</p>
+            `
+          },
+          {
+            title: '4. Vérification au Non-Poinçonnement (BAEL Art. A.5.2,4)',
+            badge: poincOk ? 'PAS D\'ARMATURE DE POINÇONNEMENT' : 'ÉPAISSEUR À AUGMENTER',
+            ok: poincOk,
+            body: `
+              <p>• Périmètre utile à $d/2$ du poteau : $u_c = 2(a + b + 2d) = \\mathbf{${uc_m.toFixed(2)}\\text{ m}}$.</p>
+              <p>• Effort de poinçonnement sollicitant : $Q_u = \\mathbf{${(Qu_poinc_MN*1000).toFixed(1)}\\text{ kN}}$ $\\le Q_{u,lim} = 0,045 \\cdot u_c \\cdot h \\cdot \\frac{f_{c28}}{\\gamma_b} = \\mathbf{${(Qu_lim_MN*1000).toFixed(1)}\\text{ kN}}$.</p>
+            `
+          }
+        ]
+      };
+    }
+
+    // --- B. SEMELLE FILANTE (DTU 13.12 OU FASCICULE 62-V) ---
+    function calcSemelleFilante(s, mat) {
+      const { reglement_fond, G_ml, Q_ml, b0, sigma_sol, B_imp, h_imp, c_enrob } = s;
+      const isFasc62 = reglement_fond === 'FASC62';
+      const Nser_kN = G_ml + Q_ml;
+      const Nu_kN = 1.35 * G_ml + 1.5 * Q_ml;
+      const Nser_MN = Nser_kN / 1000;
+      const Nu_MN = Nu_kN / 1000;
+
+      let B_cm;
+      if (B_imp > 0) {
+        B_cm = B_imp;
+      } else if (!isFasc62) {
+        B_cm = Math.ceil(((Nser_MN * 1.06) / Math.max(0.02, sigma_sol)) * 100 / 5) * 5;
+      } else {
+        const bearingEst = computeFasc62Bearing(s, 1.0, 0, mat.sit);
+        B_cm = Math.ceil(((Nu_MN * 1.08) / Math.max(0.03, bearingEst.q_adm_ELU)) * 100 / 5) * 5;
+      }
+      B_cm = Math.max(B_cm, b0 + 20);
+
+      const d_min_cm = (B_cm - b0) / 4;
+      let h_cm = h_imp > 0 ? h_imp : Math.ceil((d_min_cm + c_enrob + 1.5) / 5) * 5;
+      h_cm = Math.max(h_cm, 25);
+      const d_cm = h_cm - c_enrob - 1.0;
+
+      const B_m = B_cm / 100;
+      const Pp_kN = B_m * (h_cm / 100) * 25;
+      const sigma_els = (Nser_kN + Pp_kN) / 1000 / B_m;
+      const sigma_elu = (Nu_kN + 1.35 * Pp_kN) / 1000 / B_m;
+
+      let solOk = false, q_calc_display = 0, q_lim_display = 0, solStepHtml = '';
+      if (!isFasc62) {
+        solOk = sigma_els <= sigma_sol;
+        q_calc_display = sigma_els;
+        q_lim_display = sigma_sol;
+        solStepHtml = `
+          <p>• <strong>Méthode DTU 13.12 (ELS) :</strong> Contrainte sur le sol $\\sigma_{sol,ELS} = \\frac{N_{ser} + P_p}{B} = \\mathbf{${sigma_els.toFixed(3)}\\text{ MPa}} ${solOk ? '\\le' : '>'} \\overline{\\sigma}_{sol} = ${sigma_sol.toFixed(2)}\\text{ MPa}$.</p>
+        `;
+      } else {
+        const bearing = computeFasc62Bearing(s, B_m, 0, mat.sit);
+        solOk = sigma_elu <= bearing.q_adm_ELU && sigma_els <= bearing.q_adm_ELS;
+        q_calc_display = sigma_elu;
+        q_lim_display = bearing.q_adm_ELU;
+        solStepHtml = `
+          ${bearing.formulaHtml}
+          <p>• <strong>Vérification ELU & ELS (Semelle filante) :</strong> $q_{ref,ELU} = \\mathbf{${sigma_elu.toFixed(3)}\\text{ MPa}} ${sigma_elu <= bearing.q_adm_ELU ? '\\le' : '>'} q_{adm,ELU} = ${bearing.q_adm_ELU.toFixed(3)}\\text{ MPa}$ ; $q_{ref,ELS} = \\mathbf{${sigma_els.toFixed(3)}\\text{ MPa}} ${sigma_els <= bearing.q_adm_ELS ? '\\le' : '>'} q_{adm,ELS} = ${bearing.q_adm_ELS.toFixed(3)}\\text{ MPa}$.</p>
+        `;
+      }
+
+      const rigidOk = d_cm >= d_min_cm - 0.1;
+      const coef_fiss = mat.fiss === 'FP' ? 1.10 : (mat.fiss === 'FTP' ? 1.50 : 1.0);
+      const As_trans_cm2 = ((Nu_MN * (B_cm - b0)) / (8 * d_cm * mat.fsu)) * 1e4 * coef_fiss;
+      const meshTrans = proposeMeshSpacing(As_trans_cm2, [8, 10, 12, 14, 16]);
+
+      const As_long_min = Math.max(mat.fe >= 500 ? 1.6 : 2.0, As_trans_cm2 * B_m * 0.25);
+      const choiceLong = proposeRebarChoice(As_long_min, 3, B_cm, [8, 10, 12]);
+
+      const svg = `
+        <svg viewBox="0 0 300 210" class="w-full h-full">
+          <rect x="40" y="165" width="220" height="8" fill="#cbd5e1" stroke="#64748b"/>
+          <rect x="55" y="115" width="190" height="50" fill="#e2e8f0" stroke="#1e293b" stroke-width="2"/>
+          <rect x="130" y="30" width="40" height="85" fill="#cbd5e1" stroke="#1e293b" stroke-width="2"/>
+          <line x1="62" y1="155" x2="238" y2="155" stroke="#dc2626" stroke-width="2.5"/>
+          <circle cx="75" cy="150" r="3" fill="#1d4ed8"/><circle cx="125" cy="150" r="3" fill="#1d4ed8"/>
+          <circle cx="175" cy="150" r="3" fill="#1d4ed8"/><circle cx="225" cy="150" r="3" fill="#1d4ed8"/>
+          <line x1="150" y1="6" x2="150" y2="27" stroke="#dc2626" stroke-width="2"/>
+          <polygon points="150,30 146,22 154,22" fill="#dc2626"/>
+          <text x="158" y="20" font-size="10" font-weight="bold" fill="#dc2626">Nu = ${Nu_kN.toFixed(0)} kN/ml</text>
+          <text x="150" y="192" font-size="11" font-weight="bold" text-anchor="middle" fill="#0f172a">B = ${B_cm} cm • h = ${h_cm} cm (${isFasc62 ? 'Fasc. 62-V' : 'DTU 13.12'})</text>
+          <text x="150" y="75" font-size="10" text-anchor="middle" fill="#334155">b0=${b0}</text>
+        </svg>
+      `;
+
+      return {
+        allOk: solOk && rigidOk,
+        svg,
+        kpis: [
+          { label: 'Section Semelle $B \\times h$', value: `${B_cm} × ${h_cm} cm`, sub: `Hauteur utile $d = ${d_cm.toFixed(1)}$ cm (min ${d_min_cm.toFixed(1)} cm)`, ok: rigidOk },
+          { label: isFasc62 ? 'Portance Sol ELU (Fasc. 62-V)' : 'Contrainte Sol ELS (DTU 13.12)', value: `${q_calc_display.toFixed(3)} MPa`, sub: `Limite admissible = ${q_lim_display.toFixed(3)} MPa`, ok: solOk },
+          { label: 'Aciers transversaux (principaux)', value: `${As_trans_cm2.toFixed(2)} cm²/ml`, sub: meshTrans.text, ok: true },
+          { label: 'Chaînage longitudinal (DTU 13.12)', value: `${As_long_min.toFixed(2)} cm²`, sub: choiceLong.text, ok: true }
+        ],
+        steps: [
+          {
+            title: `1. Charges par mètre linéaire & Coffrage (${isFasc62 ? 'Fascicule 62-V' : 'DTU 13.12'})`,
+            badge: solOk && rigidOk ? 'CONFORME' : 'À REVOIR',
+            ok: solOk && rigidOk,
+            body: `
+              <p>• Charge de service : $N_{ser} = G + Q = \\mathbf{${Nser_kN.toFixed(1)}\\text{ kN/ml}}$ ; Charge ultime : $N_u = 1,35G + 1,5Q = \\mathbf{${Nu_kN.toFixed(1)}\\text{ kN/ml}}$.</p>
+              <p>• Largeur retenue : $B = \\mathbf{${B_cm}\\text{ cm}}$ ; Poids propre semelle : $P_p = ${Pp_kN.toFixed(2)}\\text{ kN/ml}$.</p>
+              ${solStepHtml}
+              <p>• Condition de rigidité : $d = ${d_cm.toFixed(1)}\\text{ cm} ${rigidOk ? '\\ge' : '<'} \\frac{B - b_0}{4} = ${d_min_cm.toFixed(1)}\\text{ cm}$.</p>
+            `
+          },
+          {
+            title: '2. Ferraillage Transversal & Chaînage Longitudinal',
+            badge: 'MÉTHODE DES BIELLES',
+            ok: true,
+            body: `
+              <p>• Armatures transversales (nappe inférieure perpendiculaire au mur) : $A_{st} = k_{fiss} \\frac{N_u (B - b_0)}{8 \\cdot d \\cdot f_{su}} = \\mathbf{${As_trans_cm2.toFixed(2)}\\text{ cm}^2\\text{/ml}}$ $\\rightarrow$ <strong>${meshTrans.text}</strong>.</p>
+              <p>• Armatures longitudinales de répartition et de chaînage : $A_{sl} = \\mathbf{${As_long_min.toFixed(2)}\\text{ cm}^2}$ $\\rightarrow$ <strong>${choiceLong.text}</strong> filants sur la largeur $B$.</p>
+            `
+          }
+        ]
+      };
+    }
+
+    // --- C. POUTRE DE REDRESSEMENT (DTU 13.12 OU FASCICULE 62-V) ---
+    function calcPoutreRedressement(s, mat) {
+      const { reglement_fond, N1_G, N1_Q, N2_G, N2_Q, L_entraxe, a1, A1, B1, bw, h, g_pr, sigma_sol } = s;
+      const isFasc62 = reglement_fond === 'FASC62';
+      const N1_u = 1.35 * N1_G + 1.5 * N1_Q;
+      const N1_ser = N1_G + N1_Q;
+      const N2_u = 1.35 * N2_G + 1.5 * N2_Q;
+
+      const e_m = (A1 - a1) / 200;
+      const A1_m = A1 / 100;
+      const B1_m = (B1 || 180) / 100;
+      const S1_m2 = A1_m * B1_m;
+
+      const R1_u = (N1_u * L_entraxe) / (L_entraxe - e_m);
+      const R1_ser = (N1_ser * L_entraxe) / (L_entraxe - e_m);
+      const soulagement_N2_u = R1_u - N1_u;
+
+      const sigma_S1_els = (R1_ser / 1000) / S1_m2;
+      const sigma_S1_elu = (R1_u / 1000) / S1_m2;
+
+      let solOk = false, q_calc_display = 0, q_lim_display = 0, solStepHtml = '';
+      if (!isFasc62) {
+        solOk = sigma_S1_els <= sigma_sol;
+        q_calc_display = sigma_S1_els;
+        q_lim_display = sigma_sol;
+        solStepHtml = `<p>• <strong>Vérification sol sous $S_1$ (DTU 13.12 — ELS) :</strong> $\\sigma_{S1,ELS} = \\frac{R_{1,ser}}{A_1 \\cdot B_1} = \\mathbf{${sigma_S1_els.toFixed(3)}\\text{ MPa}} ${solOk ? '\\le' : '>'} \\overline{\\sigma}_{sol} = ${sigma_sol.toFixed(2)}\\text{ MPa}$.</p>`;
+      } else {
+        const bearing = computeFasc62Bearing(s, A1_m, B1_m, mat.sit);
+        solOk = sigma_S1_elu <= bearing.q_adm_ELU && sigma_S1_els <= bearing.q_adm_ELS;
+        q_calc_display = sigma_S1_elu;
+        q_lim_display = bearing.q_adm_ELU;
+        solStepHtml = `
+          ${bearing.formulaHtml}
+          <p>• <strong>Vérification portance sous $S_1$ (Fascicule 62-V) :</strong> $q_{S1,ELU} = \\mathbf{${sigma_S1_elu.toFixed(3)}\\text{ MPa}} ${sigma_S1_elu <= bearing.q_adm_ELU ? '\\le' : '>'} q_{adm,ELU} = ${bearing.q_adm_ELU.toFixed(3)}\\text{ MPa}$ ; $q_{S1,ELS} = \\mathbf{${sigma_S1_els.toFixed(3)}\\text{ MPa}} ${sigma_S1_els <= bearing.q_adm_ELS ? '\\le' : '>'} q_{adm,ELS} = ${bearing.q_adm_ELS.toFixed(3)}\\text{ MPa}$.</p>
+        `;
+      }
+
+      const x_crit = A1_m;
+      const Mu_max_kNm = Math.abs(R1_u * (x_crit / 2) - N1_u * (x_crit - a1 / 200) - 1.35 * g_pr * x_crit * x_crit / 2);
+      const Mser_max_kNm = Math.abs(R1_ser * (x_crit / 2) - N1_ser * (x_crit - a1 / 200) - g_pr * x_crit * x_crit / 2);
+      const Vu_max_kN = Math.abs(R1_u - N1_u - 1.35 * g_pr * x_crit);
+
+      const bw_m = bw / 100;
+      const h_m = h / 100;
+      const d_m = h_m - 0.045;
+      const flex = solveFlexionRect(bw_m, h_m, d_m, 0.04, Mu_max_kNm / 1000, Mser_max_kNm / 1000, mat);
+      const choiceSup = proposeRebarChoice(flex.As_req_cm2, 3, bw, [14, 16, 20, 25]);
+      const choiceInf = proposeRebarChoice(Math.max(flex.Asc_elu_cm2, flex.As_min_cm2 * 0.5), 2, bw, [12, 14, 16]);
+
+      const tau_u = (Vu_max_kN / 1000) / (bw_m * d_m);
+      const tau_lim = mat.fiss === 'FPP' ? Math.min(0.20 * mat.fc28 / mat.gamma_b, 5.0) : Math.min(0.15 * mat.fc28 / mat.gamma_b, 4.0);
+      const shearOk = tau_u <= tau_lim;
+
+      const At_cm2 = 2.01;
+      const st_max = Math.min(0.9 * d_m * 100, 40);
+      const st_calc = (At_cm2 * 1e-4 * 0.9 * d_m * mat.fsu) / (bw_m * Math.max(0.01, tau_u - 0.3 * mat.ft28)) * 100;
+      const st_ret = Math.max(10, Math.min(st_max, Math.floor(st_calc)));
+
+      const svg = `
+        <svg viewBox="0 0 320 210" class="w-full h-full">
+          <rect x="20" y="135" width="75" height="35" fill="#cbd5e1" stroke="#1e293b" stroke-width="1.5"/>
+          <rect x="225" y="135" width="75" height="35" fill="#cbd5e1" stroke="#1e293b" stroke-width="1.5"/>
+          <rect x="20" y="95" width="280" height="40" fill="#e2e8f0" stroke="#1e293b" stroke-width="2"/>
+          <rect x="20" y="30" width="22" height="65" fill="#94a3b8" stroke="#1e293b" stroke-width="1.5"/>
+          <rect x="252" y="30" width="22" height="65" fill="#94a3b8" stroke="#1e293b" stroke-width="1.5"/>
+          <line x1="25" y1="102" x2="295" y2="102" stroke="#dc2626" stroke-width="3"/>
+          <line x1="25" y1="128" x2="295" y2="128" stroke="#2563eb" stroke-width="2"/>
+          <line x1="31" y1="8" x2="31" y2="27" stroke="#dc2626" stroke-width="2"/><polygon points="31,30 28,23 34,23" fill="#dc2626"/>
+          <text x="40" y="20" font-size="9" font-weight="bold" fill="#dc2626">N1u=${N1_u.toFixed(0)}kN (e=${(e_m*100).toFixed(0)}cm)</text>
+          <line x1="263" y1="8" x2="263" y2="27" stroke="#dc2626" stroke-width="2"/><polygon points="263,30 260,23 266,23" fill="#dc2626"/>
+          <text x="195" y="20" font-size="9" font-weight="bold" fill="#dc2626">N2u=${N2_u.toFixed(0)}kN</text>
+          <text x="160" y="192" font-size="10" font-weight="bold" text-anchor="middle" fill="#0f172a">Longrine ${bw}×${h} cm • Entraxe L = ${L_entraxe} m (${isFasc62 ? 'Fasc. 62-V' : 'DTU 13.12'})</text>
+        </svg>
+      `;
+
+      return {
+        allOk: solOk && shearOk && (flex.sigma_bc_ser <= mat.sigma_bc_lim),
+        svg,
+        kpis: [
+          { label: 'Moment négatif max $M_u$', value: `${Mu_max_kNm.toFixed(1)} kN.m`, sub: `Excentrement $e = ${(e_m*100).toFixed(1)}$ cm • $R_{1u} = ${R1_u.toFixed(0)}$ kN`, ok: true },
+          { label: 'Aciers supérieurs (tendus)', value: `${flex.As_req_cm2.toFixed(2)} cm²`, sub: choiceSup.text, ok: true },
+          { label: isFasc62 ? 'Sol sous S1 ELU (Fasc. 62-V)' : 'Sol sous S1 ELS (DTU 13.12)', value: `${q_calc_display.toFixed(3)} MPa`, sub: `Limite = ${q_lim_display.toFixed(3)} MPa ($S_1=${A1}\\times${B1 || 180}$ cm)`, ok: solOk },
+          { label: 'Effort tranchant $V_u$', value: `${Vu_max_kN.toFixed(1)} kN`, sub: `$\\tau_u = ${tau_u.toFixed(2)}$ MPa • Cadres HA8 esp. ${st_ret} cm`, ok: shearOk }
+        ],
+        steps: [
+          {
+            title: `1. Équilibre Statique & Justification du Sol sous S1 (${isFasc62 ? 'Fascicule 62-V' : 'DTU 13.12'})`,
+            badge: solOk ? 'SOL S1 VÉRIFIÉ' : 'DÉPASSEMENT SOL S1',
+            ok: solOk,
+            body: `
+              <p>• Excentrement du poteau de rive sur la semelle $S_1$ : $e = \\frac{A_1 - a_1}{2} = \\mathbf{${(e_m*100).toFixed(1)}\\text{ cm}}$.</p>
+              <p>• Réaction ultime majorée sous la semelle excentrée $S_1$ : $R_{1u} = N_{1u} \\frac{L}{L - e} = \\mathbf{${R1_u.toFixed(1)}\\text{ kN}}$ (soulagement $\\Delta N_u = ${soulagement_N2_u.toFixed(1)}\\text{ kN}$ sur $P_2$).</p>
+              ${solStepHtml}
+              <p>• Moment fléchissant maximal (négatif, fibre supérieure tendue) au nu de $S_1$ : $M_u = \\mathbf{${Mu_max_kNm.toFixed(1)}\\text{ kN.m}}$ ($M_{ser} = ${Mser_max_kNm.toFixed(1)}\\text{ kN.m}$).</p>
+            `
+          },
+          {
+            title: '2. Armatures Longitudinales & Transversales (BAEL 91)',
+            badge: shearOk ? 'CONFORME' : 'CISAILLEMENT ÉLEVÉ',
+            ok: shearOk,
+            body: `
+              <p>• Moment réduit $\\mu_{bu} = ${flex.mu_bu.toFixed(3)}$ ; bras de levier $z = ${(flex.z_m*100).toFixed(1)}\\text{ cm}$.</p>
+              <p>• <strong>Nappe supérieure (tendue)</strong> : $A_{s,sup} = \\mathbf{${flex.As_req_cm2.toFixed(2)}\\text{ cm}^2}$ $\\rightarrow$ <strong>${choiceSup.text}</strong>.</p>
+              <p>• <strong>Nappe inférieure (comprimée / montage)</strong> : $A_{s,inf} = \\mathbf{${Math.max(flex.Asc_elu_cm2, flex.As_min_cm2*0.5).toFixed(2)}\\text{ cm}^2}$ $\\rightarrow$ <strong>${choiceInf.text}</strong>.</p>
+              <p>• Cisaillement : $V_u = ${Vu_max_kN.toFixed(1)}\\text{ kN} \\Rightarrow \\tau_u = \\mathbf{${tau_u.toFixed(2)}\\text{ MPa}} ${shearOk ? '\\le' : '>'} \\overline{\\tau}_u = ${tau_lim.toFixed(2)}\\text{ MPa}$. Cadres HA8 espacés de <strong>${st_ret} cm</strong>.</p>
+            `
+          }
+        ]
+      };
+    }
+
+    // --- D. POTEAU ---
+    function calcPoteau(s, mat) {
+      const { shape, a, b, l0, k_flamb, N_G, N_Q, age_charge } = s;
+      const Nu_kN = 1.35 * N_G + 1.5 * N_Q;
+      const Nu_MN = Nu_kN / 1000;
+      const lf_m = parseFloat(k_flamb) * l0;
+
+      let B_cm2, Br_cm2, i_cm, dimLabel;
+      if (shape === 'rect') {
+        const minSide = Math.min(a, b);
+        B_cm2 = a * b;
+        Br_cm2 = Math.max(0, (a - 2) * (b - 2));
+        i_cm = minSide / Math.sqrt(12);
+        dimLabel = `${a} × ${b} cm`;
+      } else {
+        B_cm2 = (Math.PI * a * a) / 4;
+        Br_cm2 = (Math.PI * Math.pow(Math.max(0, a - 2), 2)) / 4;
+        i_cm = a / 4;
+        dimLabel = `Ø ${a} cm`;
+      }
+
+      const lambda = (lf_m * 100) / i_cm;
+      const slendernessOk = lambda <= 70;
+
+      let alpha = 0;
+      if (lambda <= 50) {
+        alpha = 0.85 / (1 + 0.2 * Math.pow(lambda / 35, 2));
+      } else {
+        alpha = 0.60 * Math.pow(50 / lambda, 2);
+      }
+
+      let div_age = 1.0;
+      let fc_eff = mat.fc28;
+      if (age_charge === '28') div_age = 1.10;
+      if (age_charge === '14') {
+        div_age = 1.20;
+        fc_eff = (14 / (4.76 + 0.83 * 14)) * mat.fc28;
+      }
+      const alpha_corr = alpha / div_age;
+
+      const Br_m2 = Br_cm2 * 1e-4;
+      const Ath_m2 = ((Nu_MN / alpha_corr) - (Br_m2 * fc_eff) / (0.9 * mat.gamma_b)) * (mat.gamma_s / mat.fe);
+      const Ath_cm2 = Math.max(0, Ath_m2 * 1e4);
+
+      const u_m = shape === 'rect' ? 2 * (a + b) / 100 : (Math.PI * a) / 100;
+      const Amin_cm2 = Math.max(4 * u_m, 0.002 * B_cm2);
+      const Amax_cm2 = 0.05 * B_cm2;
+
+      const As_req_cm2 = Math.max(Ath_cm2, Amin_cm2);
+      const maxOk = As_req_cm2 <= Amax_cm2;
+      const minBars = shape === 'rect' ? 4 : 6;
+      const choiceLong = proposeRebarChoice(As_req_cm2, minBars, a, [12, 14, 16, 20, 25]);
+
+      const phi_l_max = choiceLong.phi;
+      const phi_t = Math.max(6, Math.ceil(phi_l_max / 3));
+      const st_courant = Math.min(15 * (phi_l_max / 10), 40, (shape === 'rect' ? Math.min(a, b) : a) + 10);
+      const lr_cm = 0.6 * ((phi_l_max / 10 * mat.fe) / (4 * 0.6 * 2.25 * mat.ft28));
+
+      const svg = shape === 'rect' ? `
+        <svg viewBox="0 0 260 210" class="w-full h-full">
+          <rect x="65" y="30" width="130" height="145" fill="#e2e8f0" stroke="#1e293b" stroke-width="2"/>
+          <rect x="75" y="40" width="110" height="125" fill="none" stroke="#94a3b8" stroke-dasharray="3,2"/>
+          <rect x="78" y="43" width="104" height="119" rx="6" fill="none" stroke="#2563eb" stroke-width="2"/>
+          <circle cx="84" cy="49" r="5" fill="#dc2626"/><circle cx="176" cy="49" r="5" fill="#dc2626"/>
+          <circle cx="84" cy="156" r="5" fill="#dc2626"/><circle cx="176" cy="156" r="5" fill="#dc2626"/>
+          <circle cx="84" cy="102" r="4" fill="#dc2626"/><circle cx="176" cy="102" r="4" fill="#dc2626"/>
+          <text x="130" y="195" font-size="11" font-weight="bold" text-anchor="middle" fill="#0f172a">${a} × ${b} cm (λ = ${lambda.toFixed(1)})</text>
+        </svg>
+      ` : `
+        <svg viewBox="0 0 260 210" class="w-full h-full">
+          <circle cx="130" cy="100" r="70" fill="#e2e8f0" stroke="#1e293b" stroke-width="2"/>
+          <circle cx="130" cy="100" r="58" fill="none" stroke="#2563eb" stroke-width="2"/>
+          <circle cx="130" cy="44" r="5" fill="#dc2626"/><circle cx="130" cy="156" r="5" fill="#dc2626"/>
+          <circle cx="81" cy="72" r="5" fill="#dc2626"/><circle cx="179" cy="72" r="5" fill="#dc2626"/>
+          <circle cx="81" cy="128" r="5" fill="#dc2626"/><circle cx="179" cy="128" r="5" fill="#dc2626"/>
+          <text x="130" y="195" font-size="11" font-weight="bold" text-anchor="middle" fill="#0f172a">Ø ${a} cm (λ = ${lambda.toFixed(1)})</text>
+        </svg>
+      `;
+
+      return {
+        allOk: slendernessOk && maxOk,
+        svg,
+        kpis: [
+          { label: 'Élancement mécanique $\\lambda$', value: `${lambda.toFixed(1)}`, sub: `Longueur flambement $l_f = ${lf_m.toFixed(2)}$ m (max 70)`, ok: slendernessOk },
+          { label: 'Coefficient de flambement $\\alpha$', value: `${alpha_corr.toFixed(3)}`, sub: `Section réduite $B_r = ${Br_cm2.toFixed(0)}$ cm²`, ok: true },
+          { label: 'Armatures longitudinales $A_s$', value: `${As_req_cm2.toFixed(2)} cm²`, sub: choiceLong.text, ok: maxOk },
+          { label: 'Cadres transversaux', value: `HA ${phi_t} esp. ${Math.floor(st_courant)} cm`, sub: `Recouvrement $l_r = ${lr_cm.toFixed(0)}$ cm`, ok: true }
+        ],
+        steps: [
+          {
+            title: '1. Élancement & Coefficient de Flambement (BAEL Art. B.8.4,1)',
+            badge: slendernessOk ? `λ = ${lambda.toFixed(1)} ≤ 70` : 'ÉLANCEMENT EXCESSIF',
+            ok: slendernessOk,
+            body: `
+              <p>• Section ${dimLabel} : aire brute $B = ${B_cm2.toFixed(1)}\\text{ cm}^2$, aire réduite $B_r = \\mathbf{${Br_cm2.toFixed(1)}\\text{ cm}^2}$, rayon de giration $i = ${i_cm.toFixed(2)}\\text{ cm}$.</p>
+              <p>• Longueur de flambement : $l_f = ${k_flamb} \\times ${l0} = \\mathbf{${lf_m.toFixed(2)}\\text{ m}} \\Rightarrow \\lambda = \\frac{l_f}{i} = \\mathbf{${lambda.toFixed(1)}}$.</p>
+              <p>• Coefficient réducteur $\\alpha$ (corrigé de l'âge du béton, diviseur ${div_age}) : $\\alpha = \\mathbf{${alpha_corr.toFixed(3)}}$.</p>
+            `
+          },
+          {
+            title: '2. Section d\'Acier Comprimé & Dispositions Constructives (BAEL Art. A.8.1)',
+            badge: maxOk ? 'CONFORME' : 'SECTION BÉTON TROP FAIBLE',
+            ok: maxOk,
+            body: `
+              <p>• Effort normal ultime : $N_u = 1,35 G + 1,5 Q = \\mathbf{${Nu_kN.toFixed(1)}\\text{ kN}}$ ($${Nu_MN.toFixed(3)}\\text{ MN}$).</p>
+              <p>• Section théorique : $A_{th} = \\left(\\frac{N_u}{\\alpha} - \\frac{B_r \\cdot f_{c28}}{0,9 \\gamma_b}\\right)\\frac{\\gamma_s}{f_e} = \\mathbf{${Ath_cm2.toFixed(2)}\\text{ cm}^2}$.</p>
+              <p>• Section minimale réglementaire : $A_{min} = \\max(4 u ; 0,2\\% B) = \\mathbf{${Amin_cm2.toFixed(2)}\\text{ cm}^2}$ (Maxi $A_{max} = 5\\% B = ${Amax_cm2.toFixed(1)}\\text{ cm}^2$).</p>
+              <p>• Ferraillage retenu : $A_s = \\mathbf{${As_req_cm2.toFixed(2)}\\text{ cm}^2}$ $\\rightarrow$ <strong>${choiceLong.text}</strong>, cadres HA ${phi_t} espacés de <strong>${Math.floor(st_courant)} cm</strong>.</p>
+            `
+          }
+        ]
+      };
+    }
+
+    // --- E. POUTRE RECTANGULAIRE ---
+    function calcPoutre(s, mat) {
+      const { b0, h, L, mode_charge, g, q, Mu_dir, Mser_dir, Vu_dir, c_enrob } = s;
+      let Mu_kNm, Mser_kNm, Vu_kN;
+      if (mode_charge === 'repartie') {
+        const pu = 1.35 * g + 1.5 * q;
+        const pser = g + q;
+        Mu_kNm = (pu * L * L) / 8;
+        Mser_kNm = (pser * L * L) / 8;
+        Vu_kN = (pu * L) / 2;
+      } else {
+        Mu_kNm = Mu_dir;
+        Mser_kNm = Mser_dir;
+        Vu_kN = Vu_dir;
+      }
+
+      const b_m = b0 / 100;
+      const h_m = h / 100;
+      const d_m = h_m - (c_enrob / 100) - 0.02;
+      const c_prime_m = (c_enrob / 100) + 0.015;
+
+      const flex = solveFlexionRect(b_m, h_m, d_m, c_prime_m, Mu_kNm / 1000, Mser_kNm / 1000, mat);
+      const choiceInf = proposeRebarChoice(flex.As_req_cm2, 2, b0, [10, 12, 14, 16, 20, 25]);
+      const choiceSup = flex.hasComp
+        ? proposeRebarChoice(flex.Asc_elu_cm2, 2, b0, [10, 12, 14, 16, 20])
+        : proposeRebarChoice(Math.max(1.57, flex.As_min_cm2 * 0.3), 2, b0, [8, 10, 12]);
+
+      const Vu_MN = Vu_kN / 1000;
+      const tau_u = Vu_MN / (b_m * d_m);
+      const tau_lim = mat.fiss === 'FPP'
+        ? Math.min(0.20 * mat.fc28 / mat.gamma_b, 5.0)
+        : Math.min(0.15 * mat.fc28 / mat.gamma_b, 4.0);
+      const shearOk = tau_u <= tau_lim;
+
+      const brins = b0 >= 35 ? 4 : 2;
+      const phi_t = 8;
+      const At_cm2 = rebarAreaCm2(phi_t, brins);
+      const st_max = Math.min(0.9 * d_m * 100, 40);
+      const rho_t_min = (0.4 * b0) / mat.fe;
+      const st_min_rule = At_cm2 / rho_t_min;
+      const denom = 0.9 * mat.fsu * (tau_u - 0.3 * mat.ft28);
+      const st_calc = denom > 0 ? ((At_cm2 * 1e-4) / (b_m * (tau_u - 0.3 * mat.ft28) / (0.9 * mat.fsu))) * 100 : st_max;
+      const st_ret = Math.max(8, Math.min(st_max, st_min_rule, Math.floor(st_calc)));
+
+      const sigma_bc_bielle = (2 * Vu_MN) / (b_m * 0.9 * d_m);
+      const bielleLim = 0.8 * mat.fc28 / mat.gamma_b;
+      const bielleOk = sigma_bc_bielle <= bielleLim;
+
+      const elsBcOk = flex.sigma_bc_ser <= mat.sigma_bc_lim;
+      const elsSOk = mat.fiss === 'FPP' ? true : (flex.sigma_s_ser <= mat.sigma_s_lim);
+
+      const rho_eff = (choiceInf.area * 1e-4) / (b_m * d_m);
+      const h_sur_L_ok = (h_m / L) >= Math.max(1 / 16, (Mu_kNm / (10 * Math.max(1, Mser_kNm))) * (1 / 16)) && rho_eff <= 4.2 / mat.fe;
+
+      const allOk = shearOk && bielleOk && elsBcOk && elsSOk;
+
+      const svg = `
+        <svg viewBox="0 0 260 210" class="w-full h-full">
+          <rect x="75" y="25" width="110" height="150" fill="#e2e8f0" stroke="#1e293b" stroke-width="2"/>
+          <line x1="65" y1="${25 + (flex.y1_m / h_m) * 150}" x2="195" y2="${25 + (flex.y1_m / h_m) * 150}" stroke="#f59e0b" stroke-width="1.5" stroke-dasharray="4,2"/>
+          <rect x="85" y="35" width="90" height="130" rx="5" fill="none" stroke="#2563eb" stroke-width="2"/>
+          <circle cx="93" cy="157" r="5" fill="#dc2626"/><circle cx="130" cy="157" r="5" fill="#dc2626"/><circle cx="167" cy="157" r="5" fill="#dc2626"/>
+          <circle cx="93" cy="43" r="4" fill="#0f172a"/><circle cx="167" cy="43" r="4" fill="#0f172a"/>
+          <text x="130" y="195" font-size="11" font-weight="bold" text-anchor="middle" fill="#0f172a">${b0} × ${h} cm (d=${(d_m*100).toFixed(0)}cm)</text>
+          <text x="200" y="${28 + (flex.y1_m / h_m) * 150}" font-size="9" fill="#d97706">y1=${(flex.y1_m*100).toFixed(1)}cm</text>
+        </svg>
+      `;
+
+      return {
+        allOk,
+        svg,
+        kpis: [
+          { label: 'Flexion ELU ($M_u = ' + Mu_kNm.toFixed(1) + '$ kN.m)', value: `${flex.As_req_cm2.toFixed(2)} cm²`, sub: choiceInf.text, ok: true },
+          { label: 'Aciers supérieurs / comprimés', value: flex.hasComp ? `${flex.Asc_elu_cm2.toFixed(2)} cm²` : 'Montage seul', sub: choiceSup.text, ok: true },
+          { label: 'Effort tranchant ($V_u = ' + Vu_kN.toFixed(1) + '$ kN)', value: `${tau_u.toFixed(2)} MPa`, sub: `Cadres HA${phi_t} (${brins} brins) esp. ${st_ret} cm`, ok: shearOk },
+          { label: 'Vérification ELS ($M_{ser} = ' + Mser_kNm.toFixed(1) + '$ kN.m)', value: `σbc = ${flex.sigma_bc_ser.toFixed(1)} MPa`, sub: `σs = ${flex.sigma_s_ser.toFixed(0)} MPa`, ok: elsBcOk && elsSOk }
+        ],
+        steps: [
+          {
+            title: '1. Sollicitations de Calcul (ELU & ELS)',
+            badge: `Mu = ${Mu_kNm.toFixed(1)} kN.m`,
+            ok: true,
+            body: `
+              <p>• Section $b_0 \\times h = ${b0} \\times ${h}\\text{ cm}$, hauteur utile $d = \\mathbf{${(d_m*100).toFixed(1)}\\text{ cm}}$.</p>
+              <p>• Moment fléchissant ultime $M_u = \\mathbf{${Mu_kNm.toFixed(1)}\\text{ kN.m}}$, moment de service $M_{ser} = \\mathbf{${Mser_kNm.toFixed(1)}\\text{ kN.m}}$.</p>
+              <p>• Effort tranchant ultime maximal au nu de l'appui : $V_u = \\mathbf{${Vu_kN.toFixed(1)}\\text{ kN}}$.</p>
+            `
+          },
+          {
+            title: '2. Flexion Simple à l\'ELU & Condition de Non-Fragilité (BAEL Art. A.4.2 / A.4.3)',
+            badge: flex.pivot,
+            ok: true,
+            body: `
+              <p>• Moment réduit : $\\mu_{bu} = \\frac{M_u}{b_0 d^2 f_{bu}} = \\mathbf{${flex.mu_bu.toFixed(3)}}$ (limite $\\mu_{lim} = ${flex.mu_lim_eff.toFixed(3)}$).</p>
+              <p>• Position de l'axe neutre réduit $\\alpha = ${flex.alpha.toFixed(3)}$, bras de levier $z = \\mathbf{${(flex.z_m*100).toFixed(1)}\\text{ cm}}$.</p>
+              <p>• Section calculée : $A_{s,ELU} = \\mathbf{${flex.As_elu_cm2.toFixed(2)}\\text{ cm}^2}$ ; Non-fragilité $A_{s,min} = 0,23 b_0 d \\frac{f_{t28}}{f_e} = \\mathbf{${flex.As_min_cm2.toFixed(2)}\\text{ cm}^2}$.</p>
+              <p>• Section requise : $A_{s,req} = \\mathbf{${flex.As_req_cm2.toFixed(2)}\\text{ cm}^2}$ $\\rightarrow$ <strong>${choiceInf.text}</strong>.</p>
+            `
+          },
+          {
+            title: '3. Vérification des Contraintes à l\'ELS & Flèche (BAEL Art. A.4.5 / B.6.5)',
+            badge: elsBcOk && elsSOk ? 'ELS VÉRIFIÉ' : 'DÉPASSEMENT ELS',
+            ok: elsBcOk && elsSOk,
+            body: `
+              <p>• Axe neutre fissuré ($n=15$) : $y_1 = \\mathbf{${(flex.y1_m*100).toFixed(2)}\\text{ cm}}$, inertie fissurée $I_{fiss} = ${(flex.I_fiss*1e8).toFixed(0)}\\text{ cm}^4$.</p>
+              <p>• Contrainte compression béton : $\\sigma_{bc} = \\mathbf{${flex.sigma_bc_ser.toFixed(2)}\\text{ MPa}} ${elsBcOk ? '\\le' : '>'} \\overline{\\sigma}_{bc} = ${mat.sigma_bc_lim.toFixed(1)}\\text{ MPa}$.</p>
+              <p>• Contrainte traction acier : $\\sigma_s = \\mathbf{${flex.sigma_s_ser.toFixed(1)}\\text{ MPa}}$ ${mat.fiss === 'FPP' ? '(FPP : non limitée)' : (elsSOk ? '\\le ' + mat.sigma_s_lim.toFixed(1) + ' MPa' : '> ' + mat.sigma_s_lim.toFixed(1) + ' MPa')}.</p>
+              <p>• Évaluation forfaitaire de la flèche (BAEL B.6.5,1) : élancement $h/L = 1/${(L/h_m).toFixed(1)}$ (${h_sur_L_ok ? 'dispense de calcul de flèche vérifiée' : 'vérification approfondie de la flèche recommandée'}).</p>
+            `
+          },
+          {
+            title: '4. Effort Tranchant & Bielle d\'About (BAEL Art. A.5.1)',
+            badge: shearOk && bielleOk ? 'CISAILLEMENT OK' : 'DÉPASSEMENT CISAILLEMENT',
+            ok: shearOk && bielleOk,
+            body: `
+              <p>• Contrainte tangente conventionnelle : $\\tau_u = \\frac{V_u}{b_0 d} = \\mathbf{${tau_u.toFixed(2)}\\text{ MPa}} ${shearOk ? '\\le' : '>'} \\overline{\\tau}_u = ${tau_lim.toFixed(2)}\\text{ MPa}$.</p>
+              <p>• Armatures d'âme droites : ${brins} brins HA${phi_t} ($A_t = ${At_cm2.toFixed(2)}\\text{ cm}^2$), espacement initial $s_t = \\mathbf{${st_ret}\\text{ cm}}$ ($s_{t,max} = ${st_max.toFixed(0)}\\text{ cm}$).</p>
+              <p>• Compression de la bielle d'about : $\\sigma_{bc,bielle} = \\mathbf{${sigma_bc_bielle.toFixed(2)}\\text{ MPa}} ${bielleOk ? '\\le' : '>'} 0,8 f_{c28}/\\gamma_b = ${bielleLim.toFixed(2)}\\text{ MPa}$.</p>
+            `
+          }
+        ]
+      };
+    }
+
+    // --- F. DALLE PLEINE ---
+    function calcDalle(s, mat) {
+      const { lx, ly, h, g_surf, q_surf, continuite, c_enrob } = s;
+      const l_petit = Math.min(lx, ly);
+      const l_grand = Math.max(lx, ly);
+      const alpha = l_petit / l_grand;
+      const twoWay = alpha >= 0.40;
+
+      const pu = 1.35 * g_surf + 1.5 * q_surf;
+      const pser = g_surf + q_surf;
+
+      let mux_elu = 0.125, muy_elu = 0.25;
+      if (twoWay) {
+        mux_elu = 1 / (8 * (1 + 2.4 * Math.pow(alpha, 3)));
+        muy_elu = Math.pow(alpha, 3) * (1.9 - 0.9 * alpha);
+        muy_elu = Math.max(0.25, Math.min(1.0, muy_elu));
+      }
+
+      const M0x_u = mux_elu * pu * l_petit * l_petit;
+      const M0y_u = twoWay ? muy_elu * M0x_u : 0.25 * M0x_u;
+
+      const M0x_ser = mux_elu * pser * l_petit * l_petit;
+      const M0y_ser = twoWay ? muy_elu * M0x_ser : 0.25 * M0x_ser;
+
+      let kt = 1.0, ka = 0.0;
+      if (continuite === 'continu_inter') { kt = 0.75; ka = 0.50; }
+      if (continuite === 'continu_rive') { kt = 0.85; ka = 0.50; }
+
+      const Mtx_u = kt * M0x_u;
+      const Mty_u = kt * M0y_u;
+      const Max_u = ka * M0x_u;
+
+      const Mtx_ser = kt * M0x_ser;
+      const Mty_ser = kt * M0y_ser;
+
+      const h_m = h / 100;
+      const dx_m = h_m - (c_enrob / 100) - 0.006;
+      const dy_m = dx_m - 0.012;
+
+      const flexX = solveFlexionRect(1.0, h_m, dx_m, 0.03, Mtx_u / 1000, Mtx_ser / 1000, mat);
+      const flexY = solveFlexionRect(1.0, h_m, dy_m, 0.03, Mty_u / 1000, Mty_ser / 1000, mat);
+      const flexAppui = ka > 0 ? solveFlexionRect(1.0, h_m, dx_m, 0.03, Max_u / 1000, (ka * M0x_ser) / 1000, mat) : null;
+
+      const rho0 = mat.fe >= 500 ? 0.0008 : 0.0012;
+      const Ay_min_cm2 = rho0 * 100 * h;
+      const Ax_min_cm2 = Ay_min_cm2 * ((3 - alpha) / 2);
+
+      const Ax_req = Math.max(flexX.As_req_cm2, Ax_min_cm2);
+      const Ay_req = Math.max(flexY.As_req_cm2, Ay_min_cm2, Ax_req / 4);
+      const Aa_req = flexAppui ? Math.max(flexAppui.As_req_cm2, Ax_min_cm2) : 0;
+
+      const meshX = proposeMeshSpacing(Ax_req, [8, 10, 12, 14, 16]);
+      const meshY = proposeMeshSpacing(Ay_req, [8, 10, 12, 14]);
+      const meshA = Aa_req > 0 ? proposeMeshSpacing(Aa_req, [8, 10, 12, 14]) : { text: 'Aucun (panneau isolé)' };
+
+      const Vu_x = twoWay ? (pu * l_petit) / (2 + alpha) : (pu * l_petit) / 2;
+      const tau_u = (Vu_x / 1000) / (1.0 * dx_m);
+      const tau_lim_dalle = (0.07 * mat.fc28) / mat.gamma_b;
+      const shearOk = tau_u <= tau_lim_dalle;
+
+      const st_max_x = Math.min(3 * h, 33);
+      const st_max_y = Math.min(4 * h, 45);
+
+      const svg = `
+        <svg viewBox="0 0 280 210" class="w-full h-full">
+          <rect x="45" y="25" width="190" height="145" fill="#e2e8f0" stroke="#1e293b" stroke-width="2"/>
+          <line x1="65" y1="30" x2="65" y2="165" stroke="#2563eb" stroke-width="1.2"/>
+          <line x1="105" y1="30" x2="105" y2="165" stroke="#2563eb" stroke-width="1.2"/>
+          <line x1="145" y1="30" x2="145" y2="165" stroke="#2563eb" stroke-width="1.2"/>
+          <line x1="185" y1="30" x2="185" y2="165" stroke="#2563eb" stroke-width="1.2"/>
+          <line x1="215" y1="30" x2="215" y2="165" stroke="#2563eb" stroke-width="1.2"/>
+          <line x1="50" y1="50" x2="230" y2="50" stroke="#dc2626" stroke-width="1.8"/>
+          <line x1="50" y1="85" x2="230" y2="85" stroke="#dc2626" stroke-width="1.8"/>
+          <line x1="50" y1="120" x2="230" y2="120" stroke="#dc2626" stroke-width="1.8"/>
+          <line x1="50" y1="150" x2="230" y2="150" stroke="#dc2626" stroke-width="1.8"/>
+          <text x="140" y="190" font-size="11" font-weight="bold" text-anchor="middle" fill="#0f172a">lx=${l_petit}m × ly=${l_grand}m (ep. ${h}cm)</text>
+          <text x="140" y="16" font-size="10" font-weight="bold" text-anchor="middle" fill="#d97706">α = ${alpha.toFixed(2)} (${twoWay ? '2 sens' : '1 sens'})</text>
+        </svg>
+      `;
+
+      return {
+        allOk: shearOk,
+        svg,
+        kpis: [
+          { label: 'Rapport des portées $\\alpha = l_x/l_y$', value: `${alpha.toFixed(2)}`, sub: twoWay ? 'Portée dans 2 directions ($\\alpha \\ge 0,40$)' : 'Portée dans 1 direction ($\\alpha < 0,40$)', ok: true },
+          { label: 'Nappe inf. sens $l_x$ ($A_{sx}$)', value: `${Ax_req.toFixed(2)} cm²/ml`, sub: meshX.text, ok: true },
+          { label: 'Nappe inf. sens $l_y$ ($A_{sy}$)', value: `${Ay_req.toFixed(2)} cm²/ml`, sub: meshY.text, ok: true },
+          { label: 'Cisaillement sans cadres', value: `${tau_u.toFixed(2)} MPa`, sub: `Limite $\\overline{\\tau}_u = ${tau_lim_dalle.toFixed(2)}$ MPa`, ok: shearOk }
+        ],
+        steps: [
+          {
+            title: '1. Analyse des Portées & Moments Isostatiques (BAEL Annexe E3)',
+            badge: twoWay ? 'DALLE 2 SENS' : 'DALLE 1 SENS',
+            ok: true,
+            body: `
+              <p>• Rapport des portées : $\\alpha = \\frac{l_x}{l_y} = \\frac{${l_petit}}{${l_grand}} = \\mathbf{${alpha.toFixed(2)}}$.</p>
+              <p>• Charges surfaciques : $p_u = 1,35 g + 1,5 q = \\mathbf{${pu.toFixed(2)}\\text{ kN/m}^2}$ ; $p_{ser} = g + q = \\mathbf{${pser.toFixed(2)}\\text{ kN/m}^2}$.</p>
+              <p>• Coefficients $\\mu_x = ${mux_elu.toFixed(4)}$ et $\\mu_y = ${muy_elu.toFixed(4)}$ $\\Rightarrow M_{0x,u} = \\mathbf{${M0x_u.toFixed(2)}\\text{ kN.m/ml}}$, $M_{0y,u} = \\mathbf{${M0y_u.toFixed(2)}\\text{ kN.m/ml}}$.</p>
+              <p>• Après prise en compte de la continuité ($k_t = ${kt}, k_a = ${ka}$) : $M_{tx,u} = \\mathbf{${Mtx_u.toFixed(2)}\\text{ kN.m/ml}}$, $M_{ty,u} = \\mathbf{${Mty_u.toFixed(2)}\\text{ kN.m/ml}}$, $M_{ax,u} = \\mathbf{${Max_u.toFixed(2)}\\text{ kN.m/ml}}$.</p>
+            `
+          },
+          {
+            title: '2. Sections d\'Acier & Dispositions Constructives (BAEL Art. A.8.2 / B.7.4)',
+            badge: shearOk ? 'CONFORME' : 'ÉPAISSEUR DALLE À AUGMENTER',
+            ok: shearOk,
+            body: `
+              <p>• <strong>Lit inférieur sens $l_x$</strong> ($d_x = ${(dx_m*100).toFixed(1)}\\text{ cm}$) : $A_{sx} = \\mathbf{${Ax_req.toFixed(2)}\\text{ cm}^2\\text{/ml}}$ ($A_{x,min} = ${Ax_min_cm2.toFixed(2)}\\text{ cm}^2\\text{/ml}$) $\\rightarrow$ <strong>${meshX.text}</strong> (esp. max ${st_max_x.toFixed(0)} cm).</p>
+              <p>• <strong>Lit inférieur sens $l_y$</strong> ($d_y = ${(dy_m*100).toFixed(1)}\\text{ cm}$) : $A_{sy} = \\mathbf{${Ay_req.toFixed(2)}\\text{ cm}^2\\text{/ml}}$ ($A_{y,min} = ${Ay_min_cm2.toFixed(2)}\\text{ cm}^2\\text{/ml}$) $\\rightarrow$ <strong>${meshY.text}</strong> (esp. max ${st_max_y.toFixed(0)} cm).</p>
+              <p>• <strong>Chapeaux sur appuis</strong> : $A_{sa} = \\mathbf{${Aa_req.toFixed(2)}\\text{ cm}^2\\text{/ml}}$ $\\rightarrow$ <strong>${meshA.text}</strong>.</p>
+              <p>• Vérification cisaillement : $V_u = ${Vu_x.toFixed(1)}\\text{ kN/ml} \\Rightarrow \\tau_u = \\mathbf{${tau_u.toFixed(2)}\\text{ MPa}} ${shearOk ? '\\le' : '>'} 0,07 f_{c28}/\\gamma_b = ${tau_lim_dalle.toFixed(2)}\\text{ MPa}$.</p>
+            `
+          }
+        ]
+      };
+    }
+
+    // --- G. POUTRE EN T ---
+    function calcPoutreT(s, mat) {
+      const { b, h0, b0, h, Mu, Mser, Vu, c_enrob } = s;
+      const b_m = b / 100, h0_m = h0 / 100, b0_m = b0 / 100, h_m = h / 100;
+      const d_m = h_m - (c_enrob / 100) - 0.025;
+      const c_prime_m = (c_enrob / 100) + 0.015;
+      const Mu_MNm = Mu / 1000;
+      const Mser_MNm = Mser / 1000;
+
+      const Mtu_MNm = b_m * h0_m * mat.fbu * (d_m - h0_m / 2);
+      const Mtu_kNm = Mtu_MNm * 1000;
+      const inTable = Mu_MNm <= Mtu_MNm;
+
+      let As_elu_cm2 = 0, Asc_elu_cm2 = 0, y_elu_m = 0, z_m = 0, modeDesc = '';
+
+      if (inTable) {
+        modeDesc = 'Axe neutre dans la table ($M_u \\le M_{tu}$)';
+        const flex = solveFlexionRect(b_m, h_m, d_m, c_prime_m, Mu_MNm, Mser_MNm, mat);
+        As_elu_cm2 = flex.As_elu_cm2;
+        Asc_elu_cm2 = flex.Asc_elu_cm2;
+        y_elu_m = flex.alpha * d_m;
+        z_m = flex.z_m;
+      } else {
+        modeDesc = 'Axe neutre dans la nervure ($M_u > M_{tu}$)';
+        const M1_MNm = (b_m - b0_m) * h0_m * mat.fbu * (d_m - h0_m / 2);
+        const As1_cm2 = (M1_MNm / ((d_m - h0_m / 2) * mat.fsu)) * 1e4;
+        const M2_MNm = Mu_MNm - M1_MNm;
+        const flex2 = solveFlexionRect(b0_m, h_m, d_m, c_prime_m, M2_MNm, 0, mat);
+        As_elu_cm2 = As1_cm2 + flex2.As_elu_cm2;
+        Asc_elu_cm2 = flex2.Asc_elu_cm2;
+        y_elu_m = flex2.alpha * d_m;
+        z_m = Mu_MNm / ((As_elu_cm2 * 1e-4) * mat.fsu);
+      }
+
+      const S_table = (b_m - b0_m) * h0_m;
+      const S_ame = b0_m * h_m;
+      const S_tot = S_table + S_ame;
+      const v_sup = (S_table * (h0_m / 2) + S_ame * (h_m / 2)) / S_tot;
+      const v_inf = h_m - v_sup;
+      const I_brute = ((b_m - b0_m) * Math.pow(h0_m, 3)) / 12 + S_table * Math.pow(v_sup - h0_m / 2, 2)
+                    + (b0_m * Math.pow(h_m, 3)) / 12 + S_ame * Math.pow(h_m / 2 - v_sup, 2);
+      const As_min_cm2 = ((I_brute / v_inf) * (mat.ft28 / mat.fe) / (0.9 * d_m)) * 1e4;
+
+      const As_req_cm2 = Math.max(As_elu_cm2, As_min_cm2);
+      const choiceInf = proposeRebarChoice(As_req_cm2, 3, b0, [14, 16, 20, 25]);
+
+      const As_m2 = As_req_cm2 * 1e-4;
+      let y1_m = (-mat.n_equiv * As_m2 + Math.sqrt(Math.pow(mat.n_equiv * As_m2, 2) + 2 * b_m * mat.n_equiv * As_m2 * d_m)) / b_m;
+      let I_fiss = 0;
+      if (y1_m <= h0_m) {
+        I_fiss = (b_m * Math.pow(y1_m, 3)) / 3 + mat.n_equiv * As_m2 * Math.pow(d_m - y1_m, 2);
+      } else {
+        const Aq = 0.5 * b0_m;
+        const Bq = (b_m - b0_m) * h0_m + mat.n_equiv * As_m2;
+        const Cq = -((b_m - b0_m) * h0_m * h0_m / 2 + mat.n_equiv * As_m2 * d_m);
+        y1_m = (-Bq + Math.sqrt(Bq * Bq - 4 * Aq * Cq)) / (2 * Aq);
+        I_fiss = (b_m * Math.pow(y1_m, 3) - (b_m - b0_m) * Math.pow(y1_m - h0_m, 3)) / 3 + mat.n_equiv * As_m2 * Math.pow(d_m - y1_m, 2);
+      }
+      const sigma_bc_ser = (Mser_MNm * y1_m) / I_fiss;
+      const sigma_s_ser = mat.n_equiv * (Mser_MNm * (d_m - y1_m)) / I_fiss;
+      const elsOk = sigma_bc_ser <= mat.sigma_bc_lim && (mat.fiss === 'FPP' || sigma_s_ser <= mat.sigma_s_lim);
+
+      const Vu_MN = Vu / 1000;
+      const tau_u = Vu_MN / (b0_m * d_m);
+      const tau_lim = mat.fiss === 'FPP' ? Math.min(0.20 * mat.fc28 / mat.gamma_b, 5.0) : Math.min(0.15 * mat.fc28 / mat.gamma_b, 4.0);
+      const shearOk = tau_u <= tau_lim;
+
+      const b1_m = (b_m - b0_m) / 2;
+      const tau_couture = (Vu_MN * b1_m) / (0.9 * d_m * b_m * h0_m);
+      const At_cout_cm2_ml = ((tau_couture * h0_m) / mat.fsu) * 1e4;
+
+      const svg = `
+        <svg viewBox="0 0 280 210" class="w-full h-full">
+          <polygon points="35,25 245,25 245,55 162,55 162,175 118,175 118,55 35,55" fill="#e2e8f0" stroke="#1e293b" stroke-width="2"/>
+          <line x1="30" y1="${25 + (y1_m / h_m) * 150}" x2="250" y2="${25 + (y1_m / h_m) * 150}" stroke="#f59e0b" stroke-width="1.5" stroke-dasharray="4,2"/>
+          <rect x="125" y="33" width="30" height="134" rx="3" fill="none" stroke="#2563eb" stroke-width="1.8"/>
+          <circle cx="131" cy="161" r="4.5" fill="#dc2626"/><circle cx="149" cy="161" r="4.5" fill="#dc2626"/>
+          <circle cx="131" cy="148" r="4.5" fill="#dc2626"/><circle cx="149" cy="148" r="4.5" fill="#dc2626"/>
+          <line x1="45" y1="35" x2="235" y2="35" stroke="#16a34a" stroke-width="1.8"/>
+          <text x="140" y="195" font-size="10" font-weight="bold" text-anchor="middle" fill="#0f172a">b=${b} • h0=${h0} • b0=${b0} • h=${h} cm</text>
+        </svg>
+      `;
+
+      return {
+        allOk: shearOk && elsOk,
+        svg,
+        kpis: [
+          { label: 'Moment table seule $M_{tu}$', value: `${Mtu_kNm.toFixed(1)} kN.m`, sub: inTable ? 'Axe neutre dans la table' : 'Axe neutre dans la nervure', ok: true },
+          { label: 'Armatures tendues $A_s$', value: `${As_req_cm2.toFixed(2)} cm²`, sub: choiceInf.text, ok: true },
+          { label: 'Contraintes ELS', value: `σbc = ${sigma_bc_ser.toFixed(1)} MPa`, sub: `σs = ${sigma_s_ser.toFixed(0)} MPa`, ok: elsOk },
+          { label: 'Couture Table/Nervure', value: `${At_cout_cm2_ml.toFixed(2)} cm²/ml`, sub: `$\\tau_{cout} = ${tau_couture.toFixed(2)}$ MPa • $\\tau_u = ${tau_u.toFixed(2)}$ MPa`, ok: shearOk }
+        ],
+        steps: [
+          {
+            title: '1. Détermination de la Position de l\'Axe Neutre à l\'ELU (BAEL Art. A.4.1,3)',
+            badge: inTable ? 'AXE NEUTRE DANS LA TABLE' : 'AXE NEUTRE DANS LA NERVURE',
+            ok: true,
+            body: `
+              <p>• Moment équilibré par la table de compression seule : $M_{tu} = b \\cdot h_0 \\cdot f_{bu} \\left(d - \\frac{h_0}{2}\\right) = \\mathbf{${Mtu_kNm.toFixed(1)}\\text{ kN.m}}$.</p>
+              <p>• Comparaison avec $M_u = ${Mu.toFixed(1)}\\text{ kN.m}$ : <strong>${modeDesc}</strong>.</p>
+              <p>• Hauteur comprimée ultime $y_u = \\mathbf{${(y_elu_m*100).toFixed(1)}\\text{ cm}}$ ; Bras de levier $z = \\mathbf{${(z_m*100).toFixed(1)}\\text{ cm}}$.</p>
+            `
+          },
+          {
+            title: '2. Armatures Longitudinales & Vérification ELS',
+            badge: elsOk ? 'ELS CONFORME' : 'DÉPASSEMENT ELS',
+            ok: elsOk,
+            body: `
+              <p>• Section d'acier ELU : $A_{s,ELU} = \\mathbf{${As_elu_cm2.toFixed(2)}\\text{ cm}^2}$ ; Condition de non-fragilité : $A_{s,min} = \\mathbf{${As_min_cm2.toFixed(2)}\\text{ cm}^2}$.</p>
+              <p>• Ferraillage retenu : $A_s = \\mathbf{${As_req_cm2.toFixed(2)}\\text{ cm}^2}$ $\\rightarrow$ <strong>${choiceInf.text}</strong>.</p>
+              <p>• Vérification ELS ($y_1 = ${(y1_m*100).toFixed(1)}\\text{ cm}$) : $\\sigma_{bc} = \\mathbf{${sigma_bc_ser.toFixed(2)}\\text{ MPa}} \\le ${mat.sigma_bc_lim.toFixed(1)}\\text{ MPa}$ ; $\\sigma_s = \\mathbf{${sigma_s_ser.toFixed(1)}\\text{ MPa}}$.</p>
+            `
+          },
+          {
+            title: '3. Cisaillement d\'Âme & Couture Jonction Hourdis/Nervure (BAEL Art. A.5.3,2)',
+            badge: shearOk ? 'COUTURE VÉRIFIÉE' : 'CISAILLEMENT ÉLEVÉ',
+            ok: shearOk,
+            body: `
+              <p>• Cisaillement dans l'âme : $\\tau_u = \\frac{V_u}{b_0 d} = \\mathbf{${tau_u.toFixed(2)}\\text{ MPa}} ${shearOk ? '\\le' : '>'} \\overline{\\tau}_u = ${tau_lim.toFixed(2)}\\text{ MPa}$.</p>
+              <p>• Contrainte de cisaillement longitudinal à la jonction table/nervure (débord $b_1 = ${(b1_m*100).toFixed(0)}\\text{ cm}$) : $\\tau_{u,couture} = \\frac{V_u \\cdot b_1}{0,9 d \\cdot b \\cdot h_0} = \\mathbf{${tau_couture.toFixed(2)}\\text{ MPa}}$.</p>
+              <p>• Section d'aciers de couture requise par côté de nervure : $A_t / s_t = \\mathbf{${At_cout_cm2_ml.toFixed(2)}\\text{ cm}^2\\text{/ml}}$.</p>
+            `
+          }
+        ]
+      };
+    }
+
+    // --- H. POUTRE EN I ---
+    function calcPoutreI(s, mat) {
+      const { bs, hs, bw, bi, hi, h, Mu, Mser, Vu, c_enrob } = s;
+      const bs_m = bs / 100, hs_m = hs / 100, bw_m = bw / 100, bi_m = bi / 100, hi_m = hi / 100, h_m = h / 100;
+      const hw_m = Math.max(0.05, h_m - hs_m - hi_m);
+      const d_m = h_m - (c_enrob / 100) - 0.03;
+      const c_prime_m = (c_enrob / 100) + 0.015;
+      const Mu_MNm = Mu / 1000;
+      const Mser_MNm = Mser / 1000;
+
+      const S1 = bs_m * hs_m, y1g = hs_m / 2;
+      const S2 = bw_m * hw_m, y2g = hs_m + hw_m / 2;
+      const S3 = bi_m * hi_m, y3g = h_m - hi_m / 2;
+      const S_tot = S1 + S2 + S3;
+      const v_sup = (S1 * y1g + S2 * y2g + S3 * y3g) / S_tot;
+      const v_inf = h_m - v_sup;
+      const I_brute = (bs_m * Math.pow(hs_m, 3)) / 12 + S1 * Math.pow(v_sup - y1g, 2)
+                    + (bw_m * Math.pow(hw_m, 3)) / 12 + S2 * Math.pow(y2g - v_sup, 2)
+                    + (bi_m * Math.pow(hi_m, 3)) / 12 + S3 * Math.pow(y3g - v_sup, 2);
+
+      const M_ms_MNm = bs_m * hs_m * mat.fbu * (d_m - hs_m / 2);
+      const inFlange = Mu_MNm <= M_ms_MNm;
+
+      let As_elu_cm2 = 0, Asc_elu_cm2 = 0, y_elu_m = 0, z_m = 0;
+      if (inFlange) {
+        const flex = solveFlexionRect(bs_m, h_m, d_m, c_prime_m, Mu_MNm, Mser_MNm, mat);
+        As_elu_cm2 = flex.As_elu_cm2;
+        Asc_elu_cm2 = flex.Asc_elu_cm2;
+        y_elu_m = flex.alpha * d_m;
+        z_m = flex.z_m;
+      } else {
+        const M1_MNm = (bs_m - bw_m) * hs_m * mat.fbu * (d_m - hs_m / 2);
+        const As1_cm2 = (M1_MNm / ((d_m - hs_m / 2) * mat.fsu)) * 1e4;
+        const M2_MNm = Mu_MNm - M1_MNm;
+        const flex2 = solveFlexionRect(bw_m, h_m, d_m, c_prime_m, M2_MNm, 0, mat);
+        As_elu_cm2 = As1_cm2 + flex2.As_elu_cm2;
+        Asc_elu_cm2 = flex2.Asc_elu_cm2;
+        y_elu_m = flex2.alpha * d_m;
+        z_m = Mu_MNm / ((As_elu_cm2 * 1e-4) * mat.fsu);
+      }
+
+      const As_min_cm2 = ((I_brute / v_inf) * (mat.ft28 / mat.fe) / (0.9 * d_m)) * 1e4;
+      const As_req_cm2 = Math.max(As_elu_cm2, As_min_cm2);
+      const choiceInf = proposeRebarChoice(As_req_cm2, 4, bi, [16, 20, 25, 32]);
+
+      const As_m2 = As_req_cm2 * 1e-4;
+      let y1_m = (-mat.n_equiv * As_m2 + Math.sqrt(Math.pow(mat.n_equiv * As_m2, 2) + 2 * bs_m * mat.n_equiv * As_m2 * d_m)) / bs_m;
+      let I_fiss = 0;
+      if (y1_m <= hs_m) {
+        I_fiss = (bs_m * Math.pow(y1_m, 3)) / 3 + mat.n_equiv * As_m2 * Math.pow(d_m - y1_m, 2);
+      } else {
+        const Aq = 0.5 * bw_m;
+        const Bq = (bs_m - bw_m) * hs_m + mat.n_equiv * As_m2;
+        const Cq = -((bs_m - bw_m) * hs_m * hs_m / 2 + mat.n_equiv * As_m2 * d_m);
+        y1_m = (-Bq + Math.sqrt(Bq * Bq - 4 * Aq * Cq)) / (2 * Aq);
+        I_fiss = (bs_m * Math.pow(y1_m, 3) - (bs_m - bw_m) * Math.pow(y1_m - hs_m, 3)) / 3 + mat.n_equiv * As_m2 * Math.pow(d_m - y1_m, 2);
+      }
+      const sigma_bc_ser = (Mser_MNm * y1_m) / I_fiss;
+      const sigma_s_ser = mat.n_equiv * (Mser_MNm * (d_m - y1_m)) / I_fiss;
+      const elsOk = sigma_bc_ser <= mat.sigma_bc_lim && (mat.fiss === 'FPP' || sigma_s_ser <= mat.sigma_s_lim);
+
+      const Vu_MN = Vu / 1000;
+      const tau_u = Vu_MN / (bw_m * d_m);
+      const tau_lim = mat.fiss === 'FPP' ? Math.min(0.20 * mat.fc28 / mat.gamma_b, 5.0) : Math.min(0.15 * mat.fc28 / mat.gamma_b, 4.0);
+      const shearOk = tau_u <= tau_lim;
+
+      const At_cm2 = rebarAreaCm2(10, 2);
+      const st_calc = ((At_cm2 * 1e-4) / (bw_m * Math.max(0.05, tau_u - 0.3 * mat.ft28) / (0.9 * mat.fsu))) * 100;
+      const st_ret = Math.max(8, Math.min(40, Math.floor(st_calc)));
+
+      const svg = `
+        <svg viewBox="0 0 280 210" class="w-full h-full">
+          <polygon points="65,20 215,20 215,42 153,42 153,155 195,155 195,180 85,180 85,155 127,155 127,42 65,42" fill="#e2e8f0" stroke="#1e293b" stroke-width="2"/>
+          <line x1="50" y1="${20 + (y1_m / h_m) * 160}" x2="230" y2="${20 + (y1_m / h_m) * 160}" stroke="#f59e0b" stroke-width="1.5" stroke-dasharray="4,2"/>
+          <circle cx="98" cy="171" r="4.5" fill="#dc2626"/><circle cx="126" cy="171" r="4.5" fill="#dc2626"/>
+          <circle cx="154" cy="171" r="4.5" fill="#dc2626"/><circle cx="182" cy="171" r="4.5" fill="#dc2626"/>
+          <circle cx="98" cy="160" r="4.5" fill="#dc2626"/><circle cx="182" cy="160" r="4.5" fill="#dc2626"/>
+          <text x="140" y="198" font-size="10" font-weight="bold" text-anchor="middle" fill="#0f172a">bs=${bs} • bw=${bw} • bi=${bi} • h=${h} cm</text>
+        </svg>
+      `;
+
+      return {
+        allOk: shearOk && elsOk,
+        svg,
+        kpis: [
+          { label: 'Inertie brute $I_b$ & Aire $B$', value: `${(I_brute*1e8).toFixed(0)} cm⁴`, sub: `Aire $B = ${(S_tot*1e4).toFixed(0)}$ cm² ($v' = ${(v_inf*100).toFixed(1)}$ cm)`, ok: true },
+          { label: 'Armatures tendues talon $A_s$', value: `${As_req_cm2.toFixed(2)} cm²`, sub: choiceInf.text, ok: true },
+          { label: 'Contraintes ELS', value: `σbc = ${sigma_bc_ser.toFixed(1)} MPa`, sub: `σs = ${sigma_s_ser.toFixed(0)} MPa`, ok: elsOk },
+          { label: 'Cisaillement d\'âme ($b_w = ' + bw + '$ cm)', value: `${tau_u.toFixed(2)} MPa`, sub: `Cadres HA10 esp. ${st_ret} cm (lim ${tau_lim.toFixed(2)} MPa)`, ok: shearOk }
+        ],
+        steps: [
+          {
+            title: '1. Caractéristiques Géométriques de la Section en I',
+            badge: inFlange ? 'AXE NEUTRE DANS MEMBRURE SUP.' : 'AXE NEUTRE DANS L\'ÂME',
+            ok: true,
+            body: `
+              <p>• Aire totale $B = ${(S_tot*1e4).toFixed(1)}\\text{ cm}^2$, fibre supérieure $v = ${(v_sup*100).toFixed(1)}\\text{ cm}$, fibre inférieure $v' = ${(v_inf*100).toFixed(1)}\\text{ cm}$.</p>
+              <p>• Moment d'inertie brute : $I_b = \\mathbf{${(I_brute*1e8).toFixed(0)}\\text{ cm}^4}$.</p>
+              <p>• Moment équilibré par la membrure supérieure seule : $M_{ms} = b_s h_s f_{bu} (d - h_s/2) = \\mathbf{${(M_ms_MNm*1000).toFixed(1)}\\text{ kN.m}}$.</p>
+            `
+          },
+          {
+            title: '2. Flexion ELU/ELS & Cisaillement d\'Âme (BAEL / Fascicule 62-V)',
+            badge: shearOk && elsOk ? 'CONFORME' : 'À VÉRIFIER',
+            ok: shearOk && elsOk,
+            body: `
+              <p>• Section d'acier ELU : $A_{s,ELU} = \\mathbf{${As_elu_cm2.toFixed(2)}\\text{ cm}^2}$ ; Non-fragilité : $A_{s,min} = \\mathbf{${As_min_cm2.toFixed(2)}\\text{ cm}^2}$.</p>
+              <p>• Ferraillage retenu en talon inférieur : $A_s = \\mathbf{${As_req_cm2.toFixed(2)}\\text{ cm}^2}$ $\\rightarrow$ <strong>${choiceInf.text}</strong>.</p>
+              <p>• Contraintes à l'ELS ($y_1 = ${(y1_m*100).toFixed(1)}\\text{ cm}$) : $\\sigma_{bc} = \\mathbf{${sigma_bc_ser.toFixed(2)}\\text{ MPa}}$, $\\sigma_s = \\mathbf{${sigma_s_ser.toFixed(1)}\\text{ MPa}}$.</p>
+              <p>• Cisaillement dans l'âme ($b_w = ${bw}\\text{ cm}$) : $\\tau_u = \\frac{V_u}{b_w d} = \\mathbf{${tau_u.toFixed(2)}\\text{ MPa}} ${shearOk ? '\\le' : '>'} \\overline{\\tau}_u = ${tau_lim.toFixed(2)}\\text{ MPa}$ $\\rightarrow$ Cadres HA10 espacés de <strong>${st_ret} cm</strong>.</p>
+            `
+          }
+        ]
+      };
+    }
+
+    // =========================================================================
+    // 6. AFFICHAGE DES RÉSULTATS & RENDU KATEX
+    // =========================================================================
+    function renderResults(res) {
+      if (!res) return;
+      const kpiPanel = document.getElementById('kpi-panel');
+      kpiPanel.innerHTML = `
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          ${res.kpis.map(k => `
+            <div class="p-3 rounded-lg border ${k.ok ? 'bg-slate-50 border-slate-200' : 'bg-red-50 border-red-200'}">
+              <div class="flex items-center justify-between gap-1">
+                <span class="text-[11px] font-semibold text-slate-500">${k.label}</span>
+                <span class="w-2 h-2 rounded-full ${k.ok ? 'bg-emerald-500' : 'bg-red-500'}"></span>
+              </div>
+              <div class="text-base font-bold font-mono-tech mt-1 ${k.ok ? 'text-slate-900' : 'text-red-700'}">${k.value}</div>
+              <div class="text-xs text-slate-600 mt-0.5">${k.sub}</div>
+            </div>
+          `).join('')}
+        </div>
+      `;
+
+      document.getElementById('svg-container').innerHTML = res.svg;
+
+      const badgeEl = document.getElementById('global-verdict-badge');
+      badgeEl.innerHTML = res.allOk
+        ? `<span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
+            <span class="w-2 h-2 rounded-full bg-emerald-500"></span> VÉRIFICATIONS SATISFAITES
+           </span>`
+        : `<span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-red-100 text-red-800 border border-red-200">
+            <span class="w-2 h-2 rounded-full bg-red-500"></span> VÉRIFICATION NON SATISFAITE
+           </span>`;
+
+      const stepsEl = document.getElementById('calculation-steps');
+      stepsEl.innerHTML = res.steps.map(st => `
+        <div class="rounded-lg border print-break-avoid ${st.ok ? 'border-slate-200 bg-white' : 'border-red-300 bg-red-50/40'} p-4">
+          <div class="flex flex-wrap items-center justify-between gap-2 mb-2 pb-2 border-b border-slate-100">
+            <h4 class="font-bold text-slate-800 text-sm">${st.title}</h4>
+            <span class="text-[11px] font-mono-tech font-semibold px-2 py-0.5 rounded ${st.ok ? 'bg-slate-100 text-slate-700' : 'bg-red-100 text-red-800'}">
+              ${st.badge}
+            </span>
+          </div>
+          <div class="space-y-1.5 text-slate-700 text-xs leading-relaxed">
+            ${st.body}
+          </div>
+        </div>
+      `).join('');
+
+      renderMath(kpiPanel);
+      renderMath(stepsEl);
+    }
+
+    // =========================================================================
+    // 6B. PRÉPARATION DU CARTOUCHE & GÉNÉRATION PDF AUTONOME
+    // =========================================================================
+    function formatLabelPlainText(raw) {
+      return raw
+        .replace(/\$f_\{c28\}\$/g, 'fc28')
+        .replace(/\$f_\{t28\}\$/g, 'ft28')
+        .replace(/\$f_\{bu\}\$/g, 'fbu')
+        .replace(/\$f_\{su\}\$/g, 'fsu')
+        .replace(/\$f_e\$/g, 'fe')
+        .replace(/\$\\gamma_b\$/g, 'γb')
+        .replace(/\$\\gamma_s\$/g, 'γs')
+        .replace(/\$\\gamma_\{sol\}\$/g, 'γsol')
+        .replace(/\$\\overline\{\\sigma\}_\{sol\}\$/g, 'σ̄sol')
+        .replace(/\$q_\{adm,ELU\}\$/g, 'qadm,ELU')
+        .replace(/\$p_\{le\}\^\*\$/g, 'ple*')
+        .replace(/\$q_\{ce\}\$/g, 'qce')
+        .replace(/\$M_\{ser\}\$/g, 'Mser')
+        .replace(/\$M_u\$/g, 'Mu')
+        .replace(/\$V_u\$/g, 'Vu')
+        .replace(/\$l_f \/ l_0\$/g, 'lf / l0')
+        .replace(/\$l_0\$/g, 'l0')
+        .replace(/\$l_x\$/g, 'lx')
+        .replace(/\$l_y\$/g, 'ly')
+        .replace(/\$b_0\$/g, 'b0')
+        .replace(/\$h_0\$/g, 'h0')
+        .replace(/\$b_s\$/g, 'bs')
+        .replace(/\$h_s\$/g, 'hs')
+        .replace(/\$b_w\$/g, 'bw')
+        .replace(/\$b_i\$/g, 'bi')
+        .replace(/\$h_i\$/g, 'hi')
+        .replace(/\$g_0\$/g, 'g0')
+        .replace(/\$G_1\$/g, 'G1').replace(/\$Q_1\$/g, 'Q1')
+        .replace(/\$G_2\$/g, 'G2').replace(/\$Q_2\$/g, 'Q2')
+        .replace(/\$a_1\$/g, 'a1').replace(/\$A_1\$/g, 'A1').replace(/\$B_1\$/g, 'B1')
+        .replace(/\$/g, '')
+        .replace(/\\text\{([^}]+)\}/g, '$1')
+        .replace(/\\times/g, '×')
+        .replace(/\\le/g, '≤')
+        .replace(/\\ge/g, '≥')
+        .trim();
+    }
+
+    function preparePrintCartouche() {
+      compute(false);
+      const mod = MODULES.find(m => m.id === currentModuleId);
+      const s = userState[currentModuleId];
+      if (validateInputs(mod, s).length > 0) {
+        showPdfFeedback('Corrigez les données invalides avant de générer ou d’imprimer le rapport.', true);
+        return false;
+      }
+
+      const mat = getMaterials();
+
+      document.getElementById('print-doc-title').textContent = `Note de Calcul — ${mod.name}`;
+      document.getElementById('print-doc-norm').textContent = `Référentiel : ${mod.norm}`;
+      document.getElementById('print-doc-date').textContent = `Date : ${new Date().toLocaleDateString('fr-FR')} à ${new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}`;
+
+      const activeFields = mod.fields.filter(f => !f.showIf || f.showIf(s));
+      const paramsSummary = activeFields.map(f => {
+        let displayVal = s[f.id];
+        if (f.type === 'select') {
+          const opt = f.options.find(o => String(o.value) === String(displayVal));
+          displayVal = opt ? formatLabelPlainText(opt.label) : displayVal;
+        } else if (f.unit) {
+          displayVal = `${displayVal} ${f.unit}`;
+        }
+        const cleanLabel = formatLabelPlainText(f.label);
+        return `<div><span class="text-slate-500">${cleanLabel} :</span> <strong class="font-mono-tech text-slate-900">${displayVal}</strong></div>`;
+      }).join('');
+
+      document.getElementById('print-doc-hypotheses').innerHTML = `
+        <div class="bg-slate-50 p-2.5 rounded border border-slate-200 space-y-1">
+          <div class="font-bold text-slate-800 uppercase text-[10px] tracking-wider border-b border-slate-200 pb-1 mb-1">1. Hypothèses Matériaux (BAEL 91)</div>
+          <div>Béton : <strong>fc28 = ${mat.fc28} MPa</strong> (ft28 = ${mat.ft28.toFixed(2)} MPa, fbu = ${mat.fbu.toFixed(2)} MPa)</div>
+          <div>Acier : <strong>FeE${mat.fe}</strong> (fsu = ${mat.fsu.toFixed(1)} MPa, γs = ${mat.gamma_s})</div>
+          <div>Fissuration : <strong>${mat.fiss}</strong> • Situation : <strong>${mat.sit === 'durable' ? 'Durable (γb = 1,50 ; γs = 1,15)' : 'Accidentelle (γb = 1,15 ; γs = 1,00)'}</strong></div>
+        </div>
+        <div class="bg-slate-50 p-2.5 rounded border border-slate-200 space-y-0.5">
+          <div class="font-bold text-slate-800 uppercase text-[10px] tracking-wider border-b border-slate-200 pb-1 mb-1">2. Données d'Entrée de l'Élément</div>
+          ${paramsSummary}
+        </div>
+      `;
+      return true;
+    }
+
+    function downloadPDFNote() {
+      if (!preparePrintCartouche()) return;
+      const mod = MODULES.find(m => m.id === currentModuleId);
+      const resultsEl = document.getElementById('results-section');
+      const exportRoot = document.createElement('div');
+      exportRoot.id = 'pdf-export-root';
+      Object.assign(exportRoot.style, {
+        position: 'fixed',
+        top: '0',
+        left: '0',
+        width: '700px',
+        opacity: '0',
+        pointerEvents: 'none',
+        zIndex: '9999',
+        backgroundColor: '#ffffff'
+      });
+
+      const exportContent = resultsEl.cloneNode(true);
+      exportContent.classList.remove('lg:col-span-8', 'print-full');
+      exportContent.classList.add('pdf-export-mode');
+      exportContent.querySelectorAll('.no-print').forEach(el => el.remove());
+      const exportCartouche = exportContent.querySelector('.print-only');
+      if (exportCartouche) exportCartouche.style.display = 'block';
+
+      const exportSvg = exportContent.querySelector('#svg-container svg');
+      if (exportSvg) {
+        exportSvg.setAttribute('width', '280');
+        exportSvg.setAttribute('height', '200');
+      }
+
+      exportContent.querySelectorAll('[id]').forEach(el => el.removeAttribute('id'));
+      exportRoot.appendChild(exportContent);
+      document.body.appendChild(exportRoot);
+
+      const cleanup = () => exportRoot.remove();
+
+      const filename = `Note_Calcul_${mod.id}_${new Date().toISOString().slice(0, 10)}.pdf`;
+
+      if (window.html2pdf) {
+        setTimeout(() => {
+          const opt = {
+            margin: [12, 12, 14, 12],
+            filename: filename,
+            image: { type: 'jpeg', quality: 0.98 },
+            html2canvas: {
+              scale: 2,
+              useCORS: true,
+              logging: false,
+              windowWidth: 780,
+              scrollX: 0,
+              scrollY: 0,
+              onclone: clonedDocument => {
+                const clonedRoot = clonedDocument.getElementById('pdf-export-root');
+                if (!clonedRoot) throw new Error('Conteneur PDF introuvable dans la copie de rendu.');
+                clonedRoot.style.opacity = '1';
+              }
+            },
+            jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+            pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
+          };
+          try {
+            html2pdf().set(opt).from(exportRoot).save().then(() => {
+              cleanup();
+              showPdfFeedback('Téléchargement PDF lancé.');
+            }).catch((error) => {
+              cleanup();
+              console.error('Échec de la génération PDF ; bascule vers l’impression navigateur.', error);
+              showPdfFeedback('La génération PDF a échoué. Utilisez la boîte d’impression pour enregistrer le rapport en PDF.', true);
+              triggerNativePrint();
+            });
+          } catch (error) {
+            cleanup();
+            console.error('Échec du démarrage de la génération PDF ; bascule vers l’impression navigateur.', error);
+            showPdfFeedback('La génération PDF a échoué. Utilisez la boîte d’impression pour enregistrer le rapport en PDF.', true);
+            triggerNativePrint();
+          }
+        }, 120);
+      } else {
+        cleanup();
+        showPdfFeedback('La librairie PDF est indisponible. Utilisez la boîte d’impression pour enregistrer le rapport en PDF.', true);
+        triggerNativePrint();
+      }
+    }
+
+    function triggerNativePrint() {
+      if (!preparePrintCartouche()) return;
+      setTimeout(() => {
+        window.print();
+      }, 150);
+    }
+
+    function showPdfFeedback(message, isError = false) {
+      const feedback = document.getElementById('pdf-export-feedback');
+      if (!feedback) return;
+      feedback.textContent = message;
+      feedback.classList.remove('hidden', 'text-emerald-700', 'text-red-700');
+      feedback.classList.add(isError ? 'text-red-700' : 'text-emerald-700');
+    }
+
+    function renderMath(container) {
+      if (!container) return;
+      if (!window.katex) {
+        // Re-planifier le rendu KaTeX si la bibliothèque est encore en cours de chargement
+        setTimeout(() => renderMath(container), 250);
+        return;
+      }
+      const walker = document.createTreeWalker(container, NodeFilter.SHOW_TEXT, null, false);
+      const nodes = [];
+      let node;
+      while ((node = walker.nextNode())) {
+        if (node.nodeValue && node.nodeValue.includes('$')) {
+          nodes.push(node);
+        }
+      }
+      nodes.forEach(textNode => {
+        const text = textNode.nodeValue;
+        const parts = text.split(/(\$\$[^$]+\$\$|\$[^$]+\$)/g);
+        if (parts.length > 1) {
+          const frag = document.createDocumentFragment();
+          parts.forEach(part => {
+            if (part.startsWith('$$') && part.endsWith('$$')) {
+              const span = document.createElement('span');
+              try {
+                katex.render(part.slice(2, -2), span, { displayMode: true, throwOnError: false });
+              } catch (e) { span.textContent = part; }
+              frag.appendChild(span);
+            } else if (part.startsWith('$') && part.endsWith('$')) {
+              const span = document.createElement('span');
+              try {
+                katex.render(part.slice(1, -1), span, { displayMode: false, throwOnError: false });
+              } catch (e) { span.textContent = part; }
+              frag.appendChild(span);
+            } else {
+              frag.appendChild(document.createTextNode(part));
+            }
+          });
+          textNode.parentNode.replaceChild(frag, textNode);
+        }
+      });
+    }
+
+    // =========================================================================
+    // 7. INITIALISATION & ÉCOUTEURS D'ÉVÉNEMENTS
+    // =========================================================================
+    function initApp() {
+      ['global-fc28', 'global-fe', 'global-fiss', 'global-sit'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) {
+          el.addEventListener('change', () => {
+            renderMatSummary();
+            compute(false);
+          });
+        }
+      });
+
+      const btnCompute = document.getElementById('btn-compute');
+      if (btnCompute) {
+        btnCompute.addEventListener('click', (e) => {
+          e.preventDefault();
+          compute(true);
+        });
+      }
+
+      const btnReset = document.getElementById('btn-reset');
+      if (btnReset) {
+        btnReset.addEventListener('click', (e) => {
+          e.preventDefault();
+          resetCurrentDefaults();
+        });
+      }
+
+      const btnPrint = document.getElementById('btn-print');
+      if (btnPrint) {
+        btnPrint.addEventListener('click', (e) => {
+          e.preventDefault();
+          downloadPDFNote();
+        });
+      }
+
+      const btnExport2 = document.getElementById('btn-export-pdf-2');
+      if (btnExport2) {
+        btnExport2.addEventListener('click', (e) => {
+          e.preventDefault();
+          downloadPDFNote();
+        });
+      }
+
+      const btnNativePrint = document.getElementById('btn-native-print');
+      if (btnNativePrint) {
+        btnNativePrint.addEventListener('click', (e) => {
+          e.preventDefault();
+          triggerNativePrint();
+        });
+      }
+
+      const form = document.getElementById('module-inputs');
+      if (form) {
+        form.addEventListener('submit', (e) => {
+          e.preventDefault();
+          compute(true);
+        });
+      }
+
+      renderMatSummary();
+      renderTabs();
+      renderInputs();
+      compute(false);
+
+      setTimeout(() => {
+        renderMatSummary();
+        renderInputs();
+        compute(false);
+      }, 350);
+    }
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', initApp);
+    } else {
+      initApp();
+    }
+  </script>
+</body>
+</html>

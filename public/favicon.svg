@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64">
+  <!-- Adapted from Lucide "building-complex", ISC License.
+       Copyright (c) 2026 Lucide Icons and Contributors.
+       Permission to use, copy, modify, and/or distribute this software for any
+       purpose with or without fee is hereby granted, provided that the above
+       copyright notice and this permission notice appear in all copies.
+       THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND. -->
+  <rect x="1" y="1" width="62" height="62" rx="14" fill="#f59e0b"/>
+  <g transform="translate(8 8) scale(2)" fill="none" stroke="#0f172a" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M10 12h4"/>
+    <path d="M10 8h4"/>
+    <path d="M14 21v-3a2 2 0 0 0-4 0v3"/>
+    <path d="M6 10H4a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-2"/>
+    <path d="M6 21V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v16"/>
+  </g>
+</svg>
